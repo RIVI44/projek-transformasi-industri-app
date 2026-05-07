@@ -131,16 +131,16 @@ with st.sidebar:
         unsafe_allow_html=True
     )
 
-# Route pages
+# Route views
 if menu == "🏠 Dashboard":
-    from pages.dashboard import show
+    from views.dashboard import show
     show()
 elif menu == "🛒 Kasir":
-    from pages.kasir import show
+    from views.kasir import show
     show()
 elif menu == "📦 Stok":
-    from pages.stok import show
+    from views.stok import show
     show()
 elif menu == "📊 Laporan":
-    from pages.laporan import show
+    from views.laporan import show
     show()
