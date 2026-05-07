@@ -18,9 +18,12 @@ st.set_page_config(
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Sans:wght@300;400;500&display=swap');
-    html, body, [class*="css"] { font-family: 'DM Sans', sans-serif; }
+    html, body, [class*="css"] { font-family: 'DM Sans', sans-serif; color: #1a1a1a; }
 
-    .stApp { background-color: #ffffff; }
+    .stApp { background-color: #fdf5ec; }
+
+    /* Semua teks utama hitam */
+    p, span, label, div, li, td, th { color: #1a1a1a !important; }
 
     section[data-testid="stSidebar"] {
         background-color: #ff6b1a !important;
@@ -32,17 +35,18 @@ st.markdown("""
         font-weight: 700 !important;
         font-size: 0.95rem !important;
         letter-spacing: 0.5px;
+        color: #ffffff !important;
     }
     section[data-testid="stSidebar"] hr { border-color: #ffffff30 !important; }
 
     [data-testid="metric-container"] {
-        background: #fff7f2 !important;
+        background: #ffffff !important;
         border: 1.5px solid #ffd4b0 !important;
         border-radius: 14px !important;
         padding: 16px !important;
     }
     [data-testid="metric-container"] label {
-        color: #ff6b1a !important;
+        color: #1a1a1a !important;
         font-family: 'Syne', sans-serif !important;
         font-weight: 700 !important;
         font-size: 0.72rem !important;
@@ -53,6 +57,9 @@ st.markdown("""
         color: #1a1a1a !important;
         font-family: 'Syne', sans-serif !important;
         font-weight: 800 !important;
+    }
+    [data-testid="metric-container"] [data-testid="stMetricDelta"] {
+        color: #1a1a1a !important;
     }
 
     .stButton > button {
@@ -77,23 +84,33 @@ st.markdown("""
         font-weight: 800 !important;
     }
 
+    .stMarkdown, .stText { color: #1a1a1a !important; }
+
     .stTabs [data-baseweb="tab"] {
         font-family: 'Syne', sans-serif !important;
         font-weight: 700 !important;
-        color: #666 !important;
+        color: #1a1a1a !important;
     }
     .stTabs [aria-selected="true"] {
         color: #ff6b1a !important;
         border-bottom-color: #ff6b1a !important;
     }
 
-    .stDataFrame { border-radius: 14px !important; overflow: hidden; border: 1.5px solid #ffe0c0 !important; }
+    .stDataFrame { border-radius: 14px !important; overflow: hidden; border: 1.5px solid #ffd4b0 !important; }
 
     [data-testid="stVerticalBlockBorderWrapper"] {
         border-radius: 14px !important;
-        border: 1.5px solid #ffe0c0 !important;
-        background: #fff7f2 !important;
+        border: 1.5px solid #ffd4b0 !important;
+        background: #ffffff !important;
     }
+
+    .stSelectbox label, .stNumberInput label, .stTextInput label,
+    .stRadio label, .stCheckbox label, .stDateInput label {
+        color: #1a1a1a !important;
+        font-weight: 600 !important;
+    }
+
+    .stAlert { color: #1a1a1a !important; }
 
     .brand-title {
         font-family: 'Syne', sans-serif;
@@ -102,7 +119,7 @@ st.markdown("""
         line-height: 1.2;
     }
     .brand-sub {
-        font-size: 0.65rem; color: #ffffff80 !important;
+        font-size: 0.65rem; color: #ffffff90 !important;
         text-transform: uppercase; letter-spacing: 2px; margin-top: 3px;
     }
 </style>
@@ -135,8 +152,69 @@ def get_greeting() -> str:
 
 
 # ─────────────────────────────────────────────
-#  SIDEBAR
+#  LOGIN
 # ─────────────────────────────────────────────
+def check_login():
+    if "logged_in" not in st.session_state:
+        st.session_state.logged_in = False
+
+    if not st.session_state.logged_in:
+        st.markdown("""
+        <style>
+        .login-wrap {
+            max-width: 400px;
+            margin: 80px auto 0;
+            background: #ffffff;
+            border-radius: 20px;
+            border: 1.5px solid #ffd4b0;
+            padding: 40px 36px;
+        }
+        .login-logo { text-align:center; font-size:3rem; margin-bottom:8px; }
+        .login-title {
+            text-align:center;
+            font-family:'Syne',sans-serif;
+            font-size:1.5rem; font-weight:800;
+            color:#1a1a1a !important;
+            margin-bottom:4px;
+        }
+        .login-sub {
+            text-align:center;
+            font-size:0.8rem;
+            color:#888 !important;
+            margin-bottom:28px;
+            text-transform:uppercase;
+            letter-spacing:2px;
+        }
+        </style>
+        """, unsafe_allow_html=True)
+
+        col_l, col_mid, col_r = st.columns([1, 2, 1])
+        with col_mid:
+            st.markdown("""
+            <div class='login-wrap'>
+                <div class='login-logo'>🍗🧃</div>
+                <div class='login-title'>Chick & Juice Faeyza</div>
+                <div class='login-sub'>Point of Sale · Login</div>
+            </div>
+            """, unsafe_allow_html=True)
+
+            with st.form("login_form"):
+                username = st.text_input("👤 Username")
+                password = st.text_input("🔒 Password", type="password")
+                submit = st.form_submit_button("Masuk →", use_container_width=True)
+
+                if submit:
+                    if username == "admin" and password == "faeyza":
+                        st.session_state.logged_in = True
+                        st.rerun()
+                    else:
+                        st.error("❌ Username atau password salah!")
+        st.stop()
+
+check_login()
+
+
+
 with st.sidebar:
     st.markdown("""
     <div style='text-align:center;padding:24px 0 12px'>
@@ -151,8 +229,12 @@ with st.sidebar:
     menu = st.radio("Navigasi", ["🏠 Dashboard", "🛒 Kasir", "📦 Stok", "📊 Laporan"],
                     label_visibility="collapsed")
     st.markdown("---")
-    st.markdown("<div style='color:#ffffff50;font-size:0.7rem;text-align:center;letter-spacing:1px'>v1.0 · CLOUD POS</div>",
+    st.markdown("<div style='color:#ffffff90;font-size:0.7rem;text-align:center;letter-spacing:1px'>v1.0 · CLOUD POS</div>",
                 unsafe_allow_html=True)
+    st.markdown("---")
+    if st.button("🚪 Logout", use_container_width=True):
+        st.session_state.logged_in = False
+        st.rerun()
 
 
 # ─────────────────────────────────────────────
