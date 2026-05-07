@@ -331,17 +331,16 @@ if menu == "🏠 Dashboard":
 
 
 # ─────────────────────────────────────────────
-#  HALAMAN: KASIR
+#  HALAMAN: KASIR (Menu + Pembayaran)
 # ─────────────────────────────────────────────
 elif menu == "🛒 Kasir":
     supabase = get_supabase()
 
-    st.markdown("## 🛒 Kasir")
-    st.markdown("Pilih menu, atur quantity, lalu proses pembayaran.")
-    st.markdown("---")
-
+    # Init session state
     if "keranjang" not in st.session_state:
         st.session_state.keranjang = []
+    if "step" not in st.session_state:
+        st.session_state.step = "menu"  # menu → bayar → qr → selesai
 
     try:
         res_menu = supabase.table("menu").select("*").eq("tersedia", True).order("kategori").execute()
@@ -350,108 +349,333 @@ elif menu == "🛒 Kasir":
         st.error(f"Gagal memuat menu: {e}")
         st.stop()
 
-    col_menu, col_cart = st.columns([3, 2])
+    # ── STEP 1: PILIH MENU ──────────────────────────────────────────
+    if st.session_state.step == "menu":
+        st.markdown("## 🛒 Kasir — Pilih Menu")
+        st.markdown("---")
 
-    with col_menu:
-        st.markdown("### 🍽️ Daftar Menu")
-        kategori_list = sorted(set(m["kategori"] for m in menu_data))
-        tab_list = st.tabs(kategori_list)
+        col_menu, col_cart = st.columns([3, 2])
 
-        for tab, kat in zip(tab_list, kategori_list):
-            with tab:
-                items = [m for m in menu_data if m["kategori"] == kat]
-                cols = st.columns(2)
-                for i, item in enumerate(items):
-                    with cols[i % 2]:
-                        with st.container(border=True):
+        with col_menu:
+            st.markdown("### 🍽️ Menu")
+            kategori_list = sorted(set(m["kategori"] for m in menu_data))
+            tab_list = st.tabs(kategori_list)
+
+            for tab, kat in zip(tab_list, kategori_list):
+                with tab:
+                    items = [m for m in menu_data if m["kategori"] == kat]
+                    cols = st.columns(2)
+                    for i, item in enumerate(items):
+                        with cols[i % 2]:
+                            with st.container(border=True):
+                                st.markdown(f"**{item['nama']}**")
+                                st.markdown(
+                                    f"<span style='color:#ff6b1a;font-weight:800;font-size:1rem'>"
+                                    f"{format_rupiah(item['harga'])}</span>",
+                                    unsafe_allow_html=True)
+                                qty = st.number_input("Qty", min_value=0, max_value=50, value=0,
+                                                      key=f"qty_{item['id']}", label_visibility="collapsed")
+                                if st.button("➕ Tambah", key=f"add_{item['id']}", use_container_width=True):
+                                    if qty > 0:
+                                        found = False
+                                        for k in st.session_state.keranjang:
+                                            if k["menu_id"] == item["id"]:
+                                                k["qty"] += qty
+                                                k["subtotal"] = k["qty"] * k["harga"]
+                                                found = True
+                                                break
+                                        if not found:
+                                            st.session_state.keranjang.append({
+                                                "menu_id": item["id"], "nama": item["nama"],
+                                                "harga": item["harga"], "qty": qty,
+                                                "subtotal": item["harga"] * qty
+                                            })
+                                        st.success(f"✅ {item['nama']} x{qty} ditambahkan!")
+                                        st.rerun()
+                                    else:
+                                        st.warning("Qty harus > 0")
+
+        with col_cart:
+            st.markdown("### 🧺 Pesanan")
+            if not st.session_state.keranjang:
+                st.markdown("""
+                <div style='text-align:center;padding:40px 20px;background:#fff7f2;
+                border-radius:14px;border:1.5px dashed #ffd4b0;color:#aaa'>
+                    <div style='font-size:2rem'>🛒</div>
+                    <div style='margin-top:8px;font-size:0.85rem'>Belum ada pesanan</div>
+                </div>
+                """, unsafe_allow_html=True)
+            else:
+                for idx, item in enumerate(st.session_state.keranjang):
+                    with st.container(border=True):
+                        c1, c2, c3 = st.columns([3, 2, 1])
+                        with c1:
                             st.markdown(f"**{item['nama']}**")
-                            st.markdown(f"<span style='color:#ff9a3c;font-weight:700'>{format_rupiah(item['harga'])}</span>",
-                                        unsafe_allow_html=True)
-                            qty = st.number_input("Qty", min_value=0, max_value=50, value=0,
-                                                  key=f"qty_{item['id']}", label_visibility="collapsed")
-                            if st.button("➕ Tambah", key=f"add_{item['id']}", use_container_width=True):
-                                if qty > 0:
-                                    found = False
-                                    for k in st.session_state.keranjang:
-                                        if k["menu_id"] == item["id"]:
-                                            k["qty"] += qty
-                                            k["subtotal"] = k["qty"] * k["harga"]
-                                            found = True
-                                            break
-                                    if not found:
-                                        st.session_state.keranjang.append({
-                                            "menu_id": item["id"], "nama": item["nama"],
-                                            "harga": item["harga"], "qty": qty,
-                                            "subtotal": item["harga"] * qty
-                                        })
-                                    st.success(f"✅ {item['nama']} x{qty} ditambahkan!")
-                                    st.rerun()
-                                else:
-                                    st.warning("Qty harus > 0")
+                            st.caption(f"x{item['qty']}")
+                        with c2:
+                            st.markdown(
+                                f"<div style='color:#ff6b1a;font-weight:700;padding-top:8px'>"
+                                f"{format_rupiah(item['subtotal'])}</div>",
+                                unsafe_allow_html=True)
+                        with c3:
+                            if st.button("🗑️", key=f"del_{idx}"):
+                                st.session_state.keranjang.pop(idx)
+                                st.rerun()
 
-    with col_cart:
-        st.markdown("### 🧺 Keranjang")
-        if not st.session_state.keranjang:
-            st.info("Keranjang kosong. Pilih menu di sebelah kiri.")
-        else:
-            for idx, item in enumerate(st.session_state.keranjang):
-                with st.container(border=True):
-                    c1, c2, c3 = st.columns([3, 1, 1])
-                    with c1:
-                        st.markdown(f"**{item['nama']}**")
-                        st.caption(f"{format_rupiah(item['harga'])} × {item['qty']}")
-                    with c2:
-                        st.markdown(f"<div style='color:#ff9a3c;font-weight:700;padding-top:10px'>"
-                                    f"{format_rupiah(item['subtotal'])}</div>", unsafe_allow_html=True)
-                    with c3:
-                        if st.button("🗑️", key=f"del_{idx}"):
-                            st.session_state.keranjang.pop(idx)
-                            st.rerun()
+                st.markdown("---")
+                total = sum(i["subtotal"] for i in st.session_state.keranjang)
+                st.markdown(
+                    f"<div style='background:#ff6b1a;color:#fff;border-radius:12px;"
+                    f"padding:14px 18px;text-align:center'>"
+                    f"<div style='font-size:0.75rem;opacity:0.85;letter-spacing:1px;text-transform:uppercase'>TOTAL</div>"
+                    f"<div style='font-family:Syne,sans-serif;font-size:1.6rem;font-weight:800'>{format_rupiah(total)}</div>"
+                    f"</div>",
+                    unsafe_allow_html=True)
+                st.markdown("<br>", unsafe_allow_html=True)
 
-            st.markdown("---")
-            total = sum(i["subtotal"] for i in st.session_state.keranjang)
-            st.markdown(f"### Total: <span style='color:#ff9a3c'>{format_rupiah(total)}</span>",
-                        unsafe_allow_html=True)
+                col_lanjut, col_reset = st.columns(2)
+                with col_lanjut:
+                    if st.button("💳 Lanjut Bayar →", type="primary", use_container_width=True):
+                        st.session_state.step = "bayar"
+                        st.rerun()
+                with col_reset:
+                    if st.button("🗑️ Kosongkan", use_container_width=True):
+                        st.session_state.keranjang = []
+                        st.rerun()
 
-            st.markdown("#### 💳 Pembayaran")
-            metode = st.selectbox("Metode Bayar", ["Tunai", "QRIS", "Transfer Bank", "Kartu Debit"])
+    # ── STEP 2: PILIH METODE BAYAR ──────────────────────────────────
+    elif st.session_state.step == "bayar":
+        total = sum(i["subtotal"] for i in st.session_state.keranjang)
 
-            uang_bayar = 0
-            kembalian = 0
-            if metode == "Tunai":
-                uang_bayar = st.number_input("Uang Bayar (Rp)", min_value=0, step=1000, value=total)
-                kembalian = max(0, uang_bayar - total)
-                if kembalian > 0:
-                    st.success(f"💵 Kembalian: **{format_rupiah(kembalian)}**")
-                elif uang_bayar < total:
-                    st.error(f"❌ Uang kurang {format_rupiah(total - uang_bayar)}")
+        st.markdown("## 💳 Pilih Metode Pembayaran")
+        st.markdown("---")
 
-            col_bayar, col_reset = st.columns(2)
-            with col_bayar:
-                bayar_ok = metode != "Tunai" or uang_bayar >= total
-                if st.button("✅ Bayar Sekarang", type="primary", use_container_width=True, disabled=not bayar_ok):
+        col_sum, col_pay = st.columns([2, 3])
+
+        with col_sum:
+            st.markdown("### 📋 Ringkasan Pesanan")
+            for item in st.session_state.keranjang:
+                st.markdown(
+                    f"<div style='display:flex;justify-content:space-between;padding:6px 0;"
+                    f"border-bottom:1px solid #ffe0c0;font-size:0.9rem'>"
+                    f"<span>{item['nama']} <span style='color:#aaa'>x{item['qty']}</span></span>"
+                    f"<span style='font-weight:700'>{format_rupiah(item['subtotal'])}</span></div>",
+                    unsafe_allow_html=True)
+            st.markdown(
+                f"<div style='background:#ff6b1a;color:#fff;border-radius:12px;"
+                f"padding:14px 18px;text-align:center;margin-top:16px'>"
+                f"<div style='font-size:0.7rem;opacity:0.85;letter-spacing:1px;text-transform:uppercase'>TOTAL BAYAR</div>"
+                f"<div style='font-family:Syne,sans-serif;font-size:1.8rem;font-weight:800'>{format_rupiah(total)}</div>"
+                f"</div>",
+                unsafe_allow_html=True)
+
+        with col_pay:
+            st.markdown("### Pilih Cara Bayar")
+            st.markdown("<br>", unsafe_allow_html=True)
+
+            col_cash, col_qr = st.columns(2)
+
+            with col_cash:
+                st.markdown("""
+                <div style='background:#fff7f2;border:2px solid #ffd4b0;border-radius:16px;
+                padding:28px 20px;text-align:center;cursor:pointer'>
+                    <div style='font-size:2.5rem'>💵</div>
+                    <div style='font-family:Syne,sans-serif;font-weight:800;font-size:1.1rem;
+                    margin-top:10px;color:#1a1a1a'>TUNAI</div>
+                    <div style='font-size:0.75rem;color:#888;margin-top:4px'>Bayar dengan uang cash</div>
+                </div>
+                """, unsafe_allow_html=True)
+                st.markdown("<br>", unsafe_allow_html=True)
+                if st.button("Pilih Tunai", use_container_width=True, key="btn_cash"):
+                    st.session_state.step = "cash"
+                    st.rerun()
+
+            with col_qr:
+                st.markdown("""
+                <div style='background:#fff7f2;border:2px solid #ff6b1a;border-radius:16px;
+                padding:28px 20px;text-align:center;cursor:pointer;position:relative'>
+                    <div style='position:absolute;top:-10px;left:50%;transform:translateX(-50%);
+                    background:#ff6b1a;color:#fff;font-size:0.65rem;font-weight:700;
+                    padding:3px 12px;border-radius:20px;white-space:nowrap'>⚡ POPULER</div>
+                    <div style='font-size:2.5rem'>📱</div>
+                    <div style='font-family:Syne,sans-serif;font-weight:800;font-size:1.1rem;
+                    margin-top:10px;color:#1a1a1a'>QRIS</div>
+                    <div style='font-size:0.75rem;color:#888;margin-top:4px'>Scan QR Code bayar</div>
+                </div>
+                """, unsafe_allow_html=True)
+                st.markdown("<br>", unsafe_allow_html=True)
+                if st.button("Pilih QRIS", use_container_width=True, key="btn_qr"):
+                    st.session_state.step = "qris"
+                    st.rerun()
+
+            st.markdown("<br>", unsafe_allow_html=True)
+            if st.button("← Kembali ke Menu", use_container_width=True):
+                st.session_state.step = "menu"
+                st.rerun()
+
+    # ── STEP 3A: BAYAR TUNAI ────────────────────────────────────────
+    elif st.session_state.step == "cash":
+        total = sum(i["subtotal"] for i in st.session_state.keranjang)
+
+        st.markdown("## 💵 Pembayaran Tunai")
+        st.markdown("---")
+
+        col_l, col_r = st.columns([1, 1])
+        with col_l:
+            st.markdown(
+                f"<div style='background:#ff6b1a;color:#fff;border-radius:14px;"
+                f"padding:20px;text-align:center;margin-bottom:20px'>"
+                f"<div style='font-size:0.8rem;opacity:0.85;text-transform:uppercase;letter-spacing:1px'>Total Tagihan</div>"
+                f"<div style='font-family:Syne,sans-serif;font-size:2rem;font-weight:800'>{format_rupiah(total)}</div>"
+                f"</div>",
+                unsafe_allow_html=True)
+
+            uang_bayar = st.number_input("💵 Uang Diterima (Rp)", min_value=0, step=1000, value=total)
+            kembalian = max(0, uang_bayar - total)
+
+            if uang_bayar >= total and uang_bayar > 0:
+                st.markdown(
+                    f"<div style='background:#e8f5e9;border:1.5px solid #a5d6a7;border-radius:12px;"
+                    f"padding:14px;text-align:center;margin-top:10px'>"
+                    f"<div style='font-size:0.8rem;color:#2e7d32'>💰 Kembalian</div>"
+                    f"<div style='font-family:Syne,sans-serif;font-size:1.6rem;font-weight:800;color:#2e7d32'>"
+                    f"{format_rupiah(kembalian)}</div></div>",
+                    unsafe_allow_html=True)
+            elif uang_bayar > 0 and uang_bayar < total:
+                st.error(f"❌ Uang kurang {format_rupiah(total - uang_bayar)}")
+
+        with col_r:
+            st.markdown("#### 📋 Detail Pesanan")
+            for item in st.session_state.keranjang:
+                st.markdown(
+                    f"<div style='display:flex;justify-content:space-between;padding:5px 0;"
+                    f"border-bottom:1px solid #ffe0c0;font-size:0.85rem'>"
+                    f"<span>{item['nama']} x{item['qty']}</span>"
+                    f"<span style='font-weight:700'>{format_rupiah(item['subtotal'])}</span></div>",
+                    unsafe_allow_html=True)
+
+        st.markdown("<br>", unsafe_allow_html=True)
+        col_a, col_b, col_c = st.columns([2, 2, 1])
+        with col_a:
+            if st.button("✅ Konfirmasi Pembayaran", type="primary", use_container_width=True,
+                         disabled=uang_bayar < total):
+                try:
+                    nomor = generate_order_number()
+                    res = supabase.table("transaksi").insert({
+                        "nomor_order": nomor, "total": total, "metode_bayar": "Tunai",
+                        "uang_bayar": uang_bayar, "kembalian": kembalian, "status": "selesai"
+                    }).execute()
+                    trx_id = res.data[0]["id"]
+                    supabase.table("detail_transaksi").insert([{
+                        "transaksi_id": trx_id, "menu_id": item["menu_id"],
+                        "nama_menu": item["nama"], "harga": item["harga"],
+                        "qty": item["qty"], "subtotal": item["subtotal"]
+                    } for item in st.session_state.keranjang]).execute()
+                    st.session_state.keranjang = []
+                    st.session_state.step = "menu"
+                    st.success(f"🎉 Transaksi {nomor} berhasil!")
+                    st.balloons()
+                    st.rerun()
+                except Exception as e:
+                    st.error(f"Gagal: {e}")
+        with col_b:
+            if st.button("← Ganti Metode", use_container_width=True):
+                st.session_state.step = "bayar"
+                st.rerun()
+
+    # ── STEP 3B: BAYAR QRIS ─────────────────────────────────────────
+    elif st.session_state.step == "qris":
+        total = sum(i["subtotal"] for i in st.session_state.keranjang)
+        nomor_tagihan = generate_order_number()
+
+        st.markdown("## 📱 Pembayaran QRIS")
+        st.markdown("---")
+
+        col_qr, col_info = st.columns([1, 1])
+
+        with col_qr:
+            # Tampilan QR Code menggunakan qrcode API gratis
+            qr_data = f"CHICK&JUICE-FAEYZA|{nomor_tagihan}|{total}"
+            qr_url = f"https://api.qrserver.com/v1/create-qr-code/?size=280x280&data={qr_data}&bgcolor=ffffff&color=ff6b1a&qzone=2"
+
+            st.markdown(
+                f"<div style='background:#ffffff;border:2px solid #ff6b1a;border-radius:20px;"
+                f"padding:24px;text-align:center'>"
+                f"<div style='font-family:Syne,sans-serif;font-weight:800;font-size:0.8rem;"
+                f"color:#ff6b1a;text-transform:uppercase;letter-spacing:2px;margin-bottom:16px'>"
+                f"🍗 Chick & Juice Faeyza</div>"
+                f"<img src='{qr_url}' width='240' style='border-radius:12px;display:block;margin:0 auto'/>"
+                f"<div style='margin-top:16px;background:#fff7f2;border-radius:10px;padding:10px'>"
+                f"<div style='font-size:0.72rem;color:#888;text-transform:uppercase;letter-spacing:1px'>Total Pembayaran</div>"
+                f"<div style='font-family:Syne,sans-serif;font-size:1.5rem;font-weight:800;color:#ff6b1a'>"
+                f"{format_rupiah(total)}</div>"
+                f"<div style='font-size:0.7rem;color:#aaa;margin-top:4px'>{nomor_tagihan}</div>"
+                f"</div></div>",
+                unsafe_allow_html=True)
+
+        with col_info:
+            st.markdown("### Cara Bayar QRIS")
+            st.markdown("""
+            <div style='background:#ffffff;border:1.5px solid #ffd4b0;border-radius:14px;padding:20px'>
+                <div style='display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid #fff0e6'>
+                    <div style='background:#ff6b1a;color:#fff;width:28px;height:28px;border-radius:50%;
+                    display:flex;align-items:center;justify-content:center;font-weight:800;font-size:0.85rem;flex-shrink:0'>1</div>
+                    <div style='color:#1a1a1a;font-size:0.9rem'>Buka aplikasi <b>m-Banking</b> atau <b>e-Wallet</b> kamu</div>
+                </div>
+                <div style='display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid #fff0e6'>
+                    <div style='background:#ff6b1a;color:#fff;width:28px;height:28px;border-radius:50%;
+                    display:flex;align-items:center;justify-content:center;font-weight:800;font-size:0.85rem;flex-shrink:0'>2</div>
+                    <div style='color:#1a1a1a;font-size:0.9rem'>Pilih menu <b>Scan QR</b> atau <b>QRIS</b></div>
+                </div>
+                <div style='display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid #fff0e6'>
+                    <div style='background:#ff6b1a;color:#fff;width:28px;height:28px;border-radius:50%;
+                    display:flex;align-items:center;justify-content:center;font-weight:800;font-size:0.85rem;flex-shrink:0'>3</div>
+                    <div style='color:#1a1a1a;font-size:0.9rem'>Arahkan kamera ke <b>QR Code</b> di sebelah kiri</div>
+                </div>
+                <div style='display:flex;align-items:center;gap:12px;padding:10px 0'>
+                    <div style='background:#ff6b1a;color:#fff;width:28px;height:28px;border-radius:50%;
+                    display:flex;align-items:center;justify-content:center;font-weight:800;font-size:0.85rem;flex-shrink:0'>4</div>
+                    <div style='color:#1a1a1a;font-size:0.9rem'>Konfirmasi nominal & selesaikan pembayaran</div>
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+
+            st.markdown("<br>", unsafe_allow_html=True)
+            st.markdown("#### Detail Pesanan")
+            for item in st.session_state.keranjang:
+                st.markdown(
+                    f"<div style='display:flex;justify-content:space-between;padding:4px 0;"
+                    f"font-size:0.85rem;border-bottom:1px solid #ffe0c0'>"
+                    f"<span>{item['nama']} x{item['qty']}</span>"
+                    f"<span style='font-weight:700'>{format_rupiah(item['subtotal'])}</span></div>",
+                    unsafe_allow_html=True)
+
+            st.markdown("<br>", unsafe_allow_html=True)
+            col_a, col_b = st.columns(2)
+            with col_a:
+                if st.button("✅ Pembayaran Diterima", type="primary", use_container_width=True):
                     try:
-                        nomor = generate_order_number()
                         res = supabase.table("transaksi").insert({
-                            "nomor_order": nomor, "total": total, "metode_bayar": metode,
-                            "uang_bayar": uang_bayar, "kembalian": kembalian, "status": "selesai"
+                            "nomor_order": nomor_tagihan, "total": total,
+                            "metode_bayar": "QRIS", "uang_bayar": total,
+                            "kembalian": 0, "status": "selesai"
                         }).execute()
                         trx_id = res.data[0]["id"]
-                        details = [{
+                        supabase.table("detail_transaksi").insert([{
                             "transaksi_id": trx_id, "menu_id": item["menu_id"],
                             "nama_menu": item["nama"], "harga": item["harga"],
                             "qty": item["qty"], "subtotal": item["subtotal"]
-                        } for item in st.session_state.keranjang]
-                        supabase.table("detail_transaksi").insert(details).execute()
+                        } for item in st.session_state.keranjang]).execute()
                         st.session_state.keranjang = []
-                        st.success(f"🎉 Transaksi **{nomor}** berhasil! Total: {format_rupiah(total)}")
+                        st.session_state.step = "menu"
+                        st.success(f"🎉 Transaksi {nomor_tagihan} berhasil!")
                         st.balloons()
                         st.rerun()
                     except Exception as e:
-                        st.error(f"Gagal menyimpan transaksi: {e}")
-            with col_reset:
-                if st.button("🗑️ Kosongkan", use_container_width=True):
-                    st.session_state.keranjang = []
+                        st.error(f"Gagal: {e}")
+            with col_b:
+                if st.button("← Ganti Metode", use_container_width=True):
+                    st.session_state.step = "bayar"
                     st.rerun()
 
 
