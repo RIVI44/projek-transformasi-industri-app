@@ -1,7 +1,7 @@
 import streamlit as st
 
 st.set_page_config(
-    page_title="POS Ayam Geprek",
+    page_title="Ayam Geprek AKA",
     page_icon="🍗",
     layout="wide",
     initial_sidebar_state="expanded"
