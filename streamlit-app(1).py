@@ -25,10 +25,13 @@ st.markdown("""
     /* Semua teks utama hitam */
     p, span, label, div, li, td, th { color: #1a1a1a !important; }
 
-    section[data-testid="stSidebar"] {
+    section[data-testid="stSidebar"],
+    section[data-testid="stSidebar"] > div,
+    section[data-testid="stSidebar"] > div:first-child {
         background-color: #ff6b1a !important;
-        border-right: none !important;
+        min-width: 220px !important;
     }
+    section[data-testid="stSidebar"] { border-right: none !important; }
     section[data-testid="stSidebar"] * { color: #ffffff !important; }
     section[data-testid="stSidebar"] .stRadio label {
         font-family: 'Syne', sans-serif !important;
@@ -36,8 +39,15 @@ st.markdown("""
         font-size: 0.95rem !important;
         letter-spacing: 0.5px;
         color: #ffffff !important;
+        display: block !important;
+        padding: 8px 6px !important;
+        border-radius: 8px !important;
+    }
+    section[data-testid="stSidebar"] .stRadio label:hover {
+        background: #ffffff20 !important;
     }
     section[data-testid="stSidebar"] hr { border-color: #ffffff30 !important; }
+    [data-testid="collapsedControl"] { color: #ff6b1a !important; }
 
     [data-testid="metric-container"] {
         background: #ffffff !important;
