@@ -17,36 +17,94 @@ st.set_page_config(
 
 st.markdown("""
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap');
-    html, body, [class*="css"] { font-family: 'Plus Jakarta Sans', sans-serif; }
-    .stApp { background: linear-gradient(135deg, #0f0f0f 0%, #1a1200 100%); }
+    @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Sans:wght@300;400;500&display=swap');
+    html, body, [class*="css"] { font-family: 'DM Sans', sans-serif; }
+
+    .stApp { background-color: #ffffff; }
+
     section[data-testid="stSidebar"] {
-        background: linear-gradient(180deg, #1c1300 0%, #0f0a00 100%);
-        border-right: 1px solid #ff6b00;
+        background-color: #ff6b1a !important;
+        border-right: none !important;
     }
-    section[data-testid="stSidebar"] .stRadio label { color: #fff !important; font-weight: 600; }
+    section[data-testid="stSidebar"] * { color: #ffffff !important; }
+    section[data-testid="stSidebar"] .stRadio label {
+        font-family: 'Syne', sans-serif !important;
+        font-weight: 700 !important;
+        font-size: 0.95rem !important;
+        letter-spacing: 0.5px;
+    }
+    section[data-testid="stSidebar"] hr { border-color: #ffffff30 !important; }
+
     [data-testid="metric-container"] {
-        background: #1e1200;
-        border: 1px solid #ff6b0040;
-        border-radius: 12px;
-        padding: 16px;
+        background: #fff7f2 !important;
+        border: 1.5px solid #ffd4b0 !important;
+        border-radius: 14px !important;
+        padding: 16px !important;
     }
-    [data-testid="metric-container"] label { color: #ff9a3c !important; }
-    [data-testid="metric-container"] [data-testid="stMetricValue"] { color: #fff !important; font-weight: 800; }
+    [data-testid="metric-container"] label {
+        color: #ff6b1a !important;
+        font-family: 'Syne', sans-serif !important;
+        font-weight: 700 !important;
+        font-size: 0.72rem !important;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+    [data-testid="metric-container"] [data-testid="stMetricValue"] {
+        color: #1a1a1a !important;
+        font-family: 'Syne', sans-serif !important;
+        font-weight: 800 !important;
+    }
+
     .stButton > button {
-        background: linear-gradient(135deg, #ff6b00, #ff9a00);
-        color: white; border: none; border-radius: 10px;
-        font-weight: 700; transition: all 0.2s;
+        background-color: #ff6b1a !important;
+        color: #ffffff !important;
+        border: none !important;
+        border-radius: 50px !important;
+        font-family: 'Syne', sans-serif !important;
+        font-weight: 700 !important;
+        letter-spacing: 0.5px;
+        transition: all 0.2s !important;
     }
     .stButton > button:hover {
-        background: linear-gradient(135deg, #ff8c00, #ffb300);
-        transform: translateY(-1px);
-        box-shadow: 0 4px 15px #ff6b0060;
+        background-color: #e55a10 !important;
+        transform: translateY(-2px) !important;
+        box-shadow: 0 4px 12px #ff6b1a40 !important;
     }
-    .stDataFrame { border-radius: 12px; overflow: hidden; }
-    h1, h2, h3 { color: #ff9a3c !important; }
-    .brand-title { font-size: 1.4rem; font-weight: 800; color: #ff9a3c; }
-    .brand-sub { font-size: 0.75rem; color: #ff6b0080; margin-top: 2px; }
+
+    h1, h2, h3 {
+        font-family: 'Syne', sans-serif !important;
+        color: #1a1a1a !important;
+        font-weight: 800 !important;
+    }
+
+    .stTabs [data-baseweb="tab"] {
+        font-family: 'Syne', sans-serif !important;
+        font-weight: 700 !important;
+        color: #666 !important;
+    }
+    .stTabs [aria-selected="true"] {
+        color: #ff6b1a !important;
+        border-bottom-color: #ff6b1a !important;
+    }
+
+    .stDataFrame { border-radius: 14px !important; overflow: hidden; border: 1.5px solid #ffe0c0 !important; }
+
+    [data-testid="stVerticalBlockBorderWrapper"] {
+        border-radius: 14px !important;
+        border: 1.5px solid #ffe0c0 !important;
+        background: #fff7f2 !important;
+    }
+
+    .brand-title {
+        font-family: 'Syne', sans-serif;
+        font-size: 1.1rem; font-weight: 800;
+        color: #ffffff !important;
+        line-height: 1.2;
+    }
+    .brand-sub {
+        font-size: 0.65rem; color: #ffffff80 !important;
+        text-transform: uppercase; letter-spacing: 2px; margin-top: 3px;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -81,17 +139,19 @@ def get_greeting() -> str:
 # ─────────────────────────────────────────────
 with st.sidebar:
     st.markdown("""
-    <div style='text-align:center;padding:20px 0 10px'>
-        <div style='font-size:2.5rem'>🍗</div>
-        <div class='brand-title'>Chick & Juice Faeyza</div>
-        <div class='brand-sub'>Cloud Point of Sale</div>
+    <div style='text-align:center;padding:24px 0 12px'>
+        <div style='font-size:3rem;line-height:1'>🍗🧃</div>
+        <div style='width:36px;height:3px;background:#fff;border-radius:2px;margin:10px auto 8px;opacity:0.6'></div>
+        <div class='brand-title'>Chick & Juice</div>
+        <div class='brand-title' style='font-size:1.35rem'>Faeyza</div>
+        <div class='brand-sub'>Point of Sale</div>
     </div>
     """, unsafe_allow_html=True)
     st.markdown("---")
     menu = st.radio("Navigasi", ["🏠 Dashboard", "🛒 Kasir", "📦 Stok", "📊 Laporan"],
                     label_visibility="collapsed")
     st.markdown("---")
-    st.markdown("<div style='color:#ff6b0060;font-size:0.7rem;text-align:center'>v1.0 · Supabase Cloud</div>",
+    st.markdown("<div style='color:#ffffff50;font-size:0.7rem;text-align:center;letter-spacing:1px'>v1.0 · CLOUD POS</div>",
                 unsafe_allow_html=True)
 
 
