@@ -9,7 +9,7 @@ import string
 #  CONFIG & CSS
 # ─────────────────────────────────────────────
 st.set_page_config(
-    page_title="POS Ayam Geprek",
+    page_title="Chick & Juice Faeyza",
     page_icon="🍗",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -83,7 +83,7 @@ with st.sidebar:
     st.markdown("""
     <div style='text-align:center;padding:20px 0 10px'>
         <div style='font-size:2.5rem'>🍗</div>
-        <div class='brand-title'>Ayam Geprek POS</div>
+        <div class='brand-title'>Chick & Juice Faeyza</div>
         <div class='brand-sub'>Cloud Point of Sale</div>
     </div>
     """, unsafe_allow_html=True)
@@ -104,7 +104,7 @@ if menu == "🏠 Dashboard":
     yesterday = (date.today() - timedelta(days=1)).isoformat()
 
     st.markdown("## 🏠 Dashboard")
-    st.markdown(f"**{get_greeting()}, Selamat datang di POS Ayam Geprek!** · {date.today().strftime('%A, %d %B %Y')}")
+    st.markdown(f"**{get_greeting()}, Selamat datang di Chick & Juice Faeyza!** · {date.today().strftime('%A, %d %B %Y')}")
     st.markdown("---")
 
     try:
