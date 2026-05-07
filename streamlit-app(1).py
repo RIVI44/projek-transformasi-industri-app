@@ -21,6 +21,12 @@ st.markdown("""
     html, body, [class*="css"] { font-family: 'DM Sans', sans-serif; color: #1a1a1a; }
 
     .stApp { background-color: #fdf5ec; }
+    .block-container {
+        padding-left: 1.5rem !important;
+        padding-right: 1.5rem !important;
+        padding-top: 1.5rem !important;
+        max-width: 100% !important;
+    }
 
     /* Semua teks utama hitam */
     p, span, label, div, li, td, th { color: #1a1a1a !important; }
@@ -29,25 +35,33 @@ st.markdown("""
     section[data-testid="stSidebar"] > div,
     section[data-testid="stSidebar"] > div:first-child {
         background-color: #ff6b1a !important;
-        min-width: 220px !important;
+        min-width: 180px !important;
+        max-width: 180px !important;
+        width: 180px !important;
     }
     section[data-testid="stSidebar"] { border-right: none !important; }
     section[data-testid="stSidebar"] * { color: #ffffff !important; }
     section[data-testid="stSidebar"] .stRadio label {
         font-family: 'Syne', sans-serif !important;
         font-weight: 700 !important;
-        font-size: 0.95rem !important;
-        letter-spacing: 0.5px;
+        font-size: 0.82rem !important;
+        letter-spacing: 0.3px;
         color: #ffffff !important;
         display: block !important;
-        padding: 8px 6px !important;
+        padding: 6px 8px !important;
         border-radius: 8px !important;
     }
     section[data-testid="stSidebar"] .stRadio label:hover {
         background: #ffffff20 !important;
     }
     section[data-testid="stSidebar"] hr { border-color: #ffffff30 !important; }
-    [data-testid="collapsedControl"] { color: #ff6b1a !important; }
+    /* tanda panah toggle sidebar putih */
+    [data-testid="collapsedControl"] { color: #ffffff !important; background: #ff6b1a !important; }
+    button[kind="header"] svg { fill: #ffffff !important; color: #ffffff !important; }
+    .st-emotion-cache-h4xjwg, [data-testid="stSidebarCollapseButton"] button {
+        color: #ffffff !important; background: transparent !important;
+    }
+    [data-testid="stSidebarCollapseButton"] svg { stroke: #ffffff !important; }
 
     [data-testid="metric-container"] {
         background: #ffffff !important;
