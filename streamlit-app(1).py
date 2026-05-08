@@ -1,13 +1,11 @@
 import streamlit as st
+from supabase import create_client, Client
 import pandas as pd
 from datetime import datetime, date, timedelta
-from supabase import create_client, Client
 import random
 import string
 
-# ─────────────────────────────────────────────
-#  CONFIG & CSS
-# ─────────────────────────────────────────────
+# ── PAGE CONFIG ──────────────────────────────────────────────
 st.set_page_config(
     page_title="Chick & Juice Faeyza",
     page_icon="🍗",
@@ -15,150 +13,116 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
+# ── USERS & ROLES ─────────────────────────────────────────────
+USERS = {
+    "admin":  {"password": "faeyza",   "role": "admin"},
+    "kasir":  {"password": "kasir123", "role": "kasir"},
+}
+
+MENU_BY_ROLE = {
+    "admin": ["🏠 Dashboard", "🛒 Kasir", "📦 Stok", "📊 Laporan"],
+    "kasir": ["🛒 Kasir", "📦 Stok"],
+}
+
+# ── CSS ───────────────────────────────────────────────────────
 st.markdown("""
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Sans:wght@300;400;500&display=swap');
-    html, body, [class*="css"] { font-family: 'DM Sans', sans-serif; color: #1a1a1a; }
+/* ── Global ── */
+html, body, [class*="css"] {
+    background-color: #fdf5ec !important;
+    color: #1a1a1a !important;
+    font-family: 'Segoe UI', sans-serif;
+}
 
-    .stApp { background-color: #fdf5ec; }
-    .block-container {
-        padding-left: 1.5rem !important;
-        padding-right: 1.5rem !important;
-        padding-top: 1.5rem !important;
-        max-width: 100% !important;
-    }
+/* ── Sidebar ── */
+[data-testid="stSidebar"] {
+    background: linear-gradient(180deg, #FF6B2B 0%, #E8490A 100%) !important;
+    min-width: 200px !important;
+    max-width: 220px !important;
+}
+[data-testid="stSidebar"] * { color: #fff !important; }
+[data-testid="stSidebar"] .stRadio label { font-size: 15px !important; }
+[data-testid="stSidebarNavSeparator"] { background-color: rgba(255,255,255,0.2); }
+[data-testid="stSidebar"] [data-testid="stMarkdownContainer"] p {
+    color: rgba(255,255,255,0.85) !important;
+    font-size: 13px;
+}
 
-    /* Semua teks utama hitam */
-    p, span, label, div, li, td, th { color: #1a1a1a !important; }
+/* ── Arrow toggle putih ── */
+[data-testid="collapsedControl"] svg { color: #fff !important; fill: #fff !important; }
+button[kind="header"] svg { color: #fff !important; }
 
-    section[data-testid="stSidebar"],
-    section[data-testid="stSidebar"] > div,
-    section[data-testid="stSidebar"] > div:first-child {
-        background-color: #ff6b1a !important;
-        min-width: 180px !important;
-        max-width: 180px !important;
-        width: 180px !important;
-    }
-    section[data-testid="stSidebar"] { border-right: none !important; }
-    section[data-testid="stSidebar"] * { color: #ffffff !important; }
-    section[data-testid="stSidebar"] .stRadio label {
-        font-family: 'Syne', sans-serif !important;
-        font-weight: 700 !important;
-        font-size: 0.82rem !important;
-        letter-spacing: 0.3px;
-        color: #ffffff !important;
-        display: block !important;
-        padding: 6px 8px !important;
-        border-radius: 8px !important;
-    }
-    section[data-testid="stSidebar"] .stRadio label:hover {
-        background: #ffffff20 !important;
-    }
-    section[data-testid="stSidebar"] hr { border-color: #ffffff30 !important; }
-    /* tanda panah toggle sidebar putih */
-    [data-testid="collapsedControl"] { color: #ffffff !important; background: #ff6b1a !important; }
-    button[kind="header"] svg { fill: #ffffff !important; color: #ffffff !important; }
-    .st-emotion-cache-h4xjwg, [data-testid="stSidebarCollapseButton"] button {
-        color: #ffffff !important; background: transparent !important;
-    }
-    [data-testid="stSidebarCollapseButton"] svg { stroke: #ffffff !important; }
+/* ── Metric cards ── */
+[data-testid="metric-container"] {
+    background: #fff;
+    border-radius: 12px;
+    padding: 16px;
+    border-left: 4px solid #FF6B2B;
+    color: #1a1a1a !important;
+}
+[data-testid="metric-container"] label,
+[data-testid="metric-container"] div { color: #1a1a1a !important; }
 
-    [data-testid="metric-container"] {
-        background: #ffffff !important;
-        border: 1.5px solid #ffd4b0 !important;
-        border-radius: 14px !important;
-        padding: 16px !important;
-    }
-    [data-testid="metric-container"] label {
-        color: #1a1a1a !important;
-        font-family: 'Syne', sans-serif !important;
-        font-weight: 700 !important;
-        font-size: 0.72rem !important;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-    }
-    [data-testid="metric-container"] [data-testid="stMetricValue"] {
-        color: #1a1a1a !important;
-        font-family: 'Syne', sans-serif !important;
-        font-weight: 800 !important;
-    }
-    [data-testid="metric-container"] [data-testid="stMetricDelta"] {
-        color: #1a1a1a !important;
-    }
+/* ── Buttons ── */
+.stButton > button {
+    background: #FF6B2B;
+    color: #fff !important;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    padding: 8px 20px;
+}
+.stButton > button:hover { background: #E8490A; }
 
-    .stButton > button {
-        background-color: #ff6b1a !important;
-        color: #ffffff !important;
-        border: none !important;
-        border-radius: 50px !important;
-        font-family: 'Syne', sans-serif !important;
-        font-weight: 700 !important;
-        letter-spacing: 0.5px;
-        transition: all 0.2s !important;
-    }
-    .stButton > button:hover {
-        background-color: #e55a10 !important;
-        transform: translateY(-2px) !important;
-        box-shadow: 0 4px 12px #ff6b1a40 !important;
-    }
+/* ── Cards ── */
+.card {
+    background: #fff;
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 12px;
+    border: 1px solid #f0e0d0;
+}
 
-    h1, h2, h3 {
-        font-family: 'Syne', sans-serif !important;
-        color: #1a1a1a !important;
-        font-weight: 800 !important;
-    }
+/* ── Login box ── */
+.login-box {
+    background: #fff;
+    border-radius: 16px;
+    padding: 40px;
+    max-width: 400px;
+    margin: 60px auto;
+    box-shadow: 0 4px 24px rgba(255,107,43,0.12);
+    border-top: 4px solid #FF6B2B;
+}
 
-    .stMarkdown, .stText { color: #1a1a1a !important; }
+/* ── Badge role ── */
+.badge-admin {
+    background: #FF6B2B; color: #fff;
+    padding: 3px 10px; border-radius: 20px;
+    font-size: 12px; font-weight: 600;
+}
+.badge-kasir {
+    background: #4a90d9; color: #fff;
+    padding: 3px 10px; border-radius: 20px;
+    font-size: 12px; font-weight: 600;
+}
 
-    .stTabs [data-baseweb="tab"] {
-        font-family: 'Syne', sans-serif !important;
-        font-weight: 700 !important;
-        color: #1a1a1a !important;
-    }
-    .stTabs [aria-selected="true"] {
-        color: #ff6b1a !important;
-        border-bottom-color: #ff6b1a !important;
-    }
+/* ── Inputs ── */
+.stTextInput input, .stNumberInput input, .stSelectbox select {
+    border-radius: 8px !important;
+    border: 1.5px solid #f0d5c0 !important;
+}
+input:focus { border-color: #FF6B2B !important; }
 
-    .stDataFrame { border-radius: 14px !important; overflow: hidden; border: 1.5px solid #ffd4b0 !important; }
+/* ── Tables ── */
+.stDataFrame { border-radius: 10px; overflow: hidden; }
 
-    [data-testid="stVerticalBlockBorderWrapper"] {
-        border-radius: 14px !important;
-        border: 1.5px solid #ffd4b0 !important;
-        background: #ffffff !important;
-    }
-
-    .stSelectbox label, .stNumberInput label, .stTextInput label,
-    .stRadio label, .stCheckbox label, .stDateInput label {
-        color: #1a1a1a !important;
-        font-weight: 600 !important;
-    }
-
-    .stAlert { color: #1a1a1a !important; }
-
-    .brand-title {
-        font-family: 'Syne', sans-serif;
-        font-size: 1.1rem; font-weight: 800;
-        color: #ffffff !important;
-        line-height: 1.2;
-    }
-    .brand-sub {
-        font-size: 0.65rem; color: #ffffff90 !important;
-        text-transform: uppercase; letter-spacing: 2px; margin-top: 3px;
-    }
+/* ── General text ── */
+h1, h2, h3, p, label, span, div { color: #1a1a1a; }
 </style>
 """, unsafe_allow_html=True)
 
 
-# ─────────────────────────────────────────────
-#  UTILS
-# ─────────────────────────────────────────────
-@st.cache_resource
-def get_supabase() -> Client:
-    url = st.secrets["SUPABASE_URL"]
-    key = st.secrets["SUPABASE_KEY"]
-    return create_client(url, key)
-
+# ── HELPERS ──────────────────────────────────────────────────
 def format_rupiah(amount) -> str:
     return f"Rp {int(amount):,}".replace(",", ".")
 
@@ -169,762 +133,459 @@ def generate_order_number() -> str:
 
 def get_greeting() -> str:
     h = datetime.now().hour
-    if h < 11: return "Selamat Pagi"
+    if h < 11:   return "Selamat Pagi"
     elif h < 15: return "Selamat Siang"
     elif h < 18: return "Selamat Sore"
-    else: return "Selamat Malam"
+    else:        return "Selamat Malam"
 
 
-# ─────────────────────────────────────────────
-#  LOGIN
-# ─────────────────────────────────────────────
-def check_login():
-    if "logged_in" not in st.session_state:
-        st.session_state.logged_in = False
-
-    if not st.session_state.logged_in:
-        st.markdown("""
-        <style>
-        .login-wrap {
-            max-width: 400px;
-            margin: 80px auto 0;
-            background: #ffffff;
-            border-radius: 20px;
-            border: 1.5px solid #ffd4b0;
-            padding: 40px 36px;
-        }
-        .login-logo { text-align:center; font-size:3rem; margin-bottom:8px; }
-        .login-title {
-            text-align:center;
-            font-family:'Syne',sans-serif;
-            font-size:1.5rem; font-weight:800;
-            color:#1a1a1a !important;
-            margin-bottom:4px;
-        }
-        .login-sub {
-            text-align:center;
-            font-size:0.8rem;
-            color:#888 !important;
-            margin-bottom:28px;
-            text-transform:uppercase;
-            letter-spacing:2px;
-        }
-        </style>
-        """, unsafe_allow_html=True)
-
-        col_l, col_mid, col_r = st.columns([1, 2, 1])
-        with col_mid:
-            st.markdown("""
-            <div class='login-wrap'>
-                <div class='login-logo'>🍗🧃</div>
-                <div class='login-title'>Chick & Juice Faeyza</div>
-                <div class='login-sub'>Point of Sale · Login</div>
-            </div>
-            """, unsafe_allow_html=True)
-
-            with st.form("login_form"):
-                username = st.text_input("👤 Username")
-                password = st.text_input("🔒 Password", type="password")
-                submit = st.form_submit_button("Masuk →", use_container_width=True)
-
-                if submit:
-                    if username == "admin" and password == "faeyza":
-                        st.session_state.logged_in = True
-                        st.rerun()
-                    else:
-                        st.error("❌ Username atau password salah!")
-        st.stop()
-
-check_login()
+# ── SUPABASE ─────────────────────────────────────────────────
+@st.cache_resource
+def get_supabase() -> Client:
+    url = st.secrets["SUPABASE_URL"]
+    key = st.secrets["SUPABASE_KEY"]
+    return create_client(url, key)
 
 
-
-with st.sidebar:
+# ══════════════════════════════════════════════════════════════
+# LOGIN
+# ══════════════════════════════════════════════════════════════
+def show_login():
     st.markdown("""
-    <div style='text-align:center;padding:24px 0 12px'>
-        <div style='font-size:3rem;line-height:1'>🍗🧃</div>
-        <div style='width:36px;height:3px;background:#fff;border-radius:2px;margin:10px auto 8px;opacity:0.6'></div>
-        <div class='brand-title'>Chick & Juice</div>
-        <div class='brand-title' style='font-size:1.35rem'>Faeyza</div>
-        <div class='brand-sub'>Point of Sale</div>
+    <div class="login-box">
+        <div style="text-align:center;margin-bottom:24px">
+            <span style="font-size:48px">🍗</span>
+            <h2 style="color:#FF6B2B;margin:8px 0 4px">Chick & Juice Faeyza</h2>
+            <p style="color:#888;font-size:14px">Sistem Kasir Cloud</p>
+        </div>
     </div>
     """, unsafe_allow_html=True)
-    st.markdown("---")
-    menu = st.radio("Navigasi", ["🏠 Dashboard", "🛒 Kasir", "📦 Stok", "📊 Laporan"],
-                    label_visibility="collapsed")
-    st.markdown("---")
-    st.markdown("<div style='color:#ffffff90;font-size:0.7rem;text-align:center;letter-spacing:1px'>v1.0 · CLOUD POS</div>",
-                unsafe_allow_html=True)
-    st.markdown("---")
-    if st.button("🚪 Logout", use_container_width=True):
-        st.session_state.logged_in = False
-        st.rerun()
+
+    col1, col2, col3 = st.columns([1, 2, 1])
+    with col2:
+        with st.form("login_form"):
+            username = st.text_input("Username", placeholder="admin / kasir")
+            password = st.text_input("Password", type="password")
+            submitted = st.form_submit_button("🔐 Masuk", use_container_width=True)
+
+            if submitted:
+                user = USERS.get(username)
+                if user and user["password"] == password:
+                    st.session_state.logged_in = True
+                    st.session_state.username  = username
+                    st.session_state.role      = user["role"]
+                    st.rerun()
+                else:
+                    st.error("❌ Username atau password salah!")
+
+        st.markdown("""
+        <div style="text-align:center;margin-top:16px;color:#aaa;font-size:12px">
+            <b>Admin:</b> username <code>admin</code> · password <code>faeyza</code><br>
+            <b>Kasir:</b> username <code>kasir</code> · password <code>kasir123</code>
+        </div>
+        """, unsafe_allow_html=True)
 
 
-# ─────────────────────────────────────────────
-#  HALAMAN: DASHBOARD
-# ─────────────────────────────────────────────
-if menu == "🏠 Dashboard":
+# ══════════════════════════════════════════════════════════════
+# SIDEBAR
+# ══════════════════════════════════════════════════════════════
+def show_sidebar():
+    role = st.session_state.role
+    username = st.session_state.username
+
+    with st.sidebar:
+        st.markdown(f"""
+        <div style="text-align:center;padding:12px 0 8px">
+            <span style="font-size:36px">🍗</span>
+            <h3 style="margin:4px 0;color:#fff">Chick & Juice</h3>
+            <p style="font-size:11px;color:rgba(255,255,255,0.7);margin:0">Faeyza</p>
+        </div>
+        <hr style="border-color:rgba(255,255,255,0.2);margin:8px 0">
+        <div style="text-align:center;margin-bottom:12px">
+            <span class="badge-{'admin' if role=='admin' else 'kasir'}">
+                {'👑 Admin' if role=='admin' else '🧑‍💼 Kasir'}
+            </span>
+            <p style="font-size:12px;color:rgba(255,255,255,0.8);margin:6px 0 0">{username}</p>
+        </div>
+        """, unsafe_allow_html=True)
+
+        menu_options = MENU_BY_ROLE[role]
+        menu = st.radio("", menu_options, label_visibility="collapsed")
+
+        st.markdown("<hr style='border-color:rgba(255,255,255,0.2);margin-top:auto'>", unsafe_allow_html=True)
+        if st.button("🚪 Logout", use_container_width=True):
+            for key in list(st.session_state.keys()):
+                del st.session_state[key]
+            st.rerun()
+
+    return menu
+
+
+# ══════════════════════════════════════════════════════════════
+# DASHBOARD (admin only)
+# ══════════════════════════════════════════════════════════════
+def show_dashboard():
     supabase = get_supabase()
+    st.markdown(f"## 🏠 {get_greeting()}, Admin!")
+
     today = date.today().isoformat()
-    yesterday = (date.today() - timedelta(days=1)).isoformat()
-
-    st.markdown("## 🏠 Dashboard")
-    st.markdown(f"**{get_greeting()}, Selamat datang di Chick & Juice Faeyza!** · {date.today().strftime('%A, %d %B %Y')}")
-    st.markdown("---")
-
     try:
-        res_today = supabase.table("transaksi").select("total") \
-            .gte("created_at", f"{today}T00:00:00").lte("created_at", f"{today}T23:59:59").execute()
-        omset_today = sum(r["total"] for r in res_today.data)
+        res = supabase.table("transaksi").select("total,created_at").execute()
+        df_all = pd.DataFrame(res.data) if res.data else pd.DataFrame(columns=["total","created_at"])
 
-        res_yesterday = supabase.table("transaksi").select("total") \
-            .gte("created_at", f"{yesterday}T00:00:00").lte("created_at", f"{yesterday}T23:59:59").execute()
-        omset_yesterday = sum(r["total"] for r in res_yesterday.data)
-
-        delta_omset = omset_today - omset_yesterday
-        total_trx = len(res_today.data)
-
-        res_detail = supabase.table("detail_transaksi").select("qty, transaksi(created_at)").execute()
-        item_today = sum(r["qty"] for r in res_detail.data
-                         if r.get("transaksi") and r["transaksi"]["created_at"].startswith(today))
-
-        res_stok = supabase.table("stok").select("*").execute()
-        stok_kritis = sum(1 for s in res_stok.data if s["stok_saat_ini"] <= s["stok_minimum"])
-
-    except Exception as e:
-        st.error(f"Gagal memuat data: {e}")
-        omset_today = omset_yesterday = total_trx = item_today = stok_kritis = delta_omset = 0
-        res_stok = type('obj', (object,), {'data': []})()
-
-    col1, col2, col3, col4 = st.columns(4)
-    col1.metric("💰 Omset Hari Ini", format_rupiah(omset_today),
-                delta=format_rupiah(delta_omset) if delta_omset != 0 else None)
-    col2.metric("🧾 Transaksi", f"{total_trx} order")
-    col3.metric("📈 Rata-rata/Order", format_rupiah(omset_today // total_trx if total_trx > 0 else 0))
-    col4.metric("⚠️ Stok Kritis", f"{stok_kritis} bahan",
-                delta=f"-{stok_kritis} perlu restok" if stok_kritis > 0 else None, delta_color="inverse")
-
-    st.markdown("---")
-    col_left, col_right = st.columns([3, 2])
-
-    with col_left:
-        st.markdown("### 📈 Omset 7 Hari Terakhir")
-        try:
-            dates = [(date.today() - timedelta(days=i)) for i in range(6, -1, -1)]
-            omset_list = []
-            for d in dates:
-                d_str = d.isoformat()
-                res = supabase.table("transaksi").select("total") \
-                    .gte("created_at", f"{d_str}T00:00:00").lte("created_at", f"{d_str}T23:59:59").execute()
-                omset_list.append(sum(r["total"] for r in res.data))
-            df_chart = pd.DataFrame({"Tanggal": [d.strftime("%d/%m") for d in dates],
-                                     "Omset (Rp)": omset_list}).set_index("Tanggal")
-            st.bar_chart(df_chart, color="#ff6b00")
-        except:
-            st.info("Belum ada data transaksi untuk grafik.")
-
-    with col_right:
-        st.markdown("### ⚠️ Stok Hampir Habis")
-        try:
-            kritis = [s for s in res_stok.data if s["stok_saat_ini"] <= s["stok_minimum"]]
-            if kritis:
-                df_k = pd.DataFrame(kritis)[["nama_bahan", "stok_saat_ini", "satuan", "stok_minimum"]]
-                df_k.columns = ["Bahan", "Stok", "Satuan", "Min."]
-                st.dataframe(df_k, use_container_width=True, hide_index=True)
-            else:
-                st.success("✅ Semua stok aman!")
-        except:
-            st.info("Tidak ada data stok.")
-
-    st.markdown("### 🧾 Transaksi Terbaru Hari Ini")
-    try:
-        res_trx = supabase.table("transaksi").select("*") \
-            .gte("created_at", f"{today}T00:00:00").order("created_at", desc=True).limit(10).execute()
-        if res_trx.data:
-            df_trx = pd.DataFrame(res_trx.data)
-            df_trx["total"] = df_trx["total"].apply(format_rupiah)
-            df_trx["created_at"] = pd.to_datetime(df_trx["created_at"]).dt.strftime("%H:%M")
-            df_trx = df_trx[["nomor_order", "total", "metode_bayar", "status", "created_at"]]
-            df_trx.columns = ["No. Order", "Total", "Pembayaran", "Status", "Jam"]
-            st.dataframe(df_trx, use_container_width=True, hide_index=True)
+        if not df_all.empty:
+            df_all["created_at"] = pd.to_datetime(df_all["created_at"])
+            df_all["tanggal"]    = df_all["created_at"].dt.date
+            df_today = df_all[df_all["tanggal"] == date.today()]
         else:
-            st.info("Belum ada transaksi hari ini.")
+            df_today = pd.DataFrame(columns=["total","tanggal"])
+
+        omset_hari_ini = int(df_today["total"].sum()) if not df_today.empty else 0
+        trx_hari_ini   = len(df_today)
+        rata_rata      = int(df_today["total"].mean()) if not df_today.empty else 0
+
+        col1, col2, col3 = st.columns(3)
+        col1.metric("💰 Omset Hari Ini", format_rupiah(omset_hari_ini))
+        col2.metric("🧾 Transaksi",       trx_hari_ini)
+        col3.metric("📊 Rata-rata",        format_rupiah(rata_rata))
+
+        # Grafik 7 hari
+        st.markdown("---")
+        st.markdown("### 📈 Omset 7 Hari Terakhir")
+        if not df_all.empty:
+            last7 = [(date.today() - timedelta(days=i)) for i in range(6, -1, -1)]
+            data7 = {"Tanggal": last7, "Omset": [int(df_all[df_all["tanggal"]==d]["total"].sum()) for d in last7]}
+            st.bar_chart(pd.DataFrame(data7).set_index("Tanggal"))
+        else:
+            st.info("Belum ada data transaksi.")
+
+        # Stok kritis
+        st.markdown("---")
+        st.markdown("### ⚠️ Stok Kritis")
+        stok_res = supabase.table("stok").select("*").execute()
+        if stok_res.data:
+            df_stok = pd.DataFrame(stok_res.data)
+            kritis  = df_stok[df_stok["stok_saat_ini"] <= df_stok["stok_minimum"]]
+            if not kritis.empty:
+                for _, r in kritis.iterrows():
+                    st.warning(f"⚠️ **{r['nama_bahan']}** — stok {r['stok_saat_ini']} {r['satuan']} (min: {r['stok_minimum']})")
+            else:
+                st.success("✅ Semua stok aman.")
+
     except Exception as e:
         st.error(f"Error: {e}")
 
 
-# ─────────────────────────────────────────────
-#  HALAMAN: KASIR (Menu + Pembayaran)
-# ─────────────────────────────────────────────
-elif menu == "🛒 Kasir":
+# ══════════════════════════════════════════════════════════════
+# KASIR
+# ══════════════════════════════════════════════════════════════
+BAGIAN_AYAM = [
+    {"nama": "Paha Bawah Geprek",  "harga": 15000, "emoji": "🍗", "deskripsi": "Juicy & gurih"},
+    {"nama": "Paha Atas Geprek",   "harga": 16000, "emoji": "🍗", "deskripsi": "Daging tebal"},
+    {"nama": "Dada Geprek",        "harga": 17000, "emoji": "🍗", "deskripsi": "Rendah lemak"},
+    {"nama": "Sayap Geprek",       "harga": 13000, "emoji": "🍗", "deskripsi": "Crispy & renyah"},
+    {"nama": "Geprek Keju",        "harga": 20000, "emoji": "🧀", "deskripsi": "+ keju leleh"},
+    {"nama": "Geprek Mozarela",    "harga": 22000, "emoji": "🧀", "deskripsi": "+ mozarela"},
+    {"nama": "Geprek Pedas Gila",  "harga": 17000, "emoji": "🌶️", "deskripsi": "Level pedas max"},
+]
+
+def show_kasir():
     supabase = get_supabase()
 
-    # Init session state
     if "keranjang" not in st.session_state:
-        st.session_state.keranjang = []
+        st.session_state.keranjang = {}
     if "step" not in st.session_state:
-        st.session_state.step = "menu"  # menu → bayar → qr → selesai
+        st.session_state.step = "menu"
 
-    try:
-        res_menu = supabase.table("menu").select("*").eq("tersedia", True).order("kategori").execute()
-        menu_data = res_menu.data
-    except Exception as e:
-        st.error(f"Gagal memuat menu: {e}")
-        st.stop()
-
-    # ── STEP 1: PILIH MENU ──────────────────────────────────────────
+    # ── STEP 1: MENU ──
     if st.session_state.step == "menu":
         st.markdown("## 🛒 Kasir — Pilih Menu")
+
+        try:
+            res  = supabase.table("menu").select("*").eq("tersedia", True).execute()
+            menu_db = res.data if res.data else []
+        except:
+            menu_db = []
+
+        # Gabungkan bagian ayam + menu dari DB (non-ayam)
+        menu_lain = [m for m in menu_db if "Ayam" not in m.get("nama","") and "Geprek" not in m.get("nama","")]
+        tabs = st.tabs(["🍗 Ayam Geprek", "🍚 Nasi", "🥤 Minuman", "🍳 Lauk"])
+
+        with tabs[0]:
+            cols = st.columns(3)
+            for i, item in enumerate(BAGIAN_AYAM):
+                with cols[i % 3]:
+                    with st.container():
+                        st.markdown(f"""
+                        <div class="card" style="text-align:center">
+                            <div style="font-size:36px">{item['emoji']}</div>
+                            <b style="font-size:14px">{item['nama']}</b><br>
+                            <span style="color:#888;font-size:12px">{item['deskripsi']}</span><br>
+                            <span style="color:#FF6B2B;font-weight:700">{format_rupiah(item['harga'])}</span>
+                        </div>
+                        """, unsafe_allow_html=True)
+                        qty = st.number_input("Qty", min_value=0, max_value=99,
+                            value=st.session_state.keranjang.get(item['nama'], {}).get("qty", 0),
+                            key=f"ayam_{i}", label_visibility="collapsed")
+                        if qty > 0:
+                            st.session_state.keranjang[item['nama']] = {"qty": qty, "harga": item['harga']}
+                        elif item['nama'] in st.session_state.keranjang:
+                            del st.session_state.keranjang[item['nama']]
+
+        for tab_idx, kategori in enumerate(["Nasi", "Minuman", "Lauk"]):
+            with tabs[tab_idx + 1]:
+                items_kat = [m for m in menu_db if m.get("kategori") == kategori]
+                if not items_kat:
+                    st.info(f"Belum ada menu {kategori}.")
+                    continue
+                cols = st.columns(3)
+                for i, item in enumerate(items_kat):
+                    with cols[i % 3]:
+                        st.markdown(f"""
+                        <div class="card" style="text-align:center">
+                            <b>{item['nama']}</b><br>
+                            <span style="color:#FF6B2B;font-weight:700">{format_rupiah(item['harga'])}</span>
+                        </div>
+                        """, unsafe_allow_html=True)
+                        qty = st.number_input("Qty", min_value=0, max_value=99,
+                            value=st.session_state.keranjang.get(item['nama'], {}).get("qty", 0),
+                            key=f"menu_{item['id']}", label_visibility="collapsed")
+                        if qty > 0:
+                            st.session_state.keranjang[item['nama']] = {"qty": qty, "harga": item['harga']}
+                        elif item['nama'] in st.session_state.keranjang:
+                            del st.session_state.keranjang[item['nama']]
+
+        # Ringkasan keranjang
         st.markdown("---")
+        st.markdown("### 🧺 Keranjang")
+        if st.session_state.keranjang:
+            total = 0
+            for nama, d in st.session_state.keranjang.items():
+                subtotal = d['qty'] * d['harga']
+                total += subtotal
+                st.write(f"• **{nama}** × {d['qty']} = {format_rupiah(subtotal)}")
+            st.markdown(f"### 💰 Total: **{format_rupiah(total)}**")
 
-        col_menu, col_cart = st.columns([3, 2])
+            col1, col2 = st.columns(2)
+            with col1:
+                if st.button("🗑️ Kosongkan", use_container_width=True):
+                    st.session_state.keranjang = {}
+                    st.rerun()
+            with col2:
+                if st.button("💳 Lanjut Bayar →", use_container_width=True):
+                    st.session_state.step = "bayar"
+                    st.rerun()
+        else:
+            st.info("Belum ada item dipilih.")
 
-        with col_menu:
-            st.markdown("### 🍽️ Menu")
-            kategori_list = sorted(set(m["kategori"] for m in menu_data))
-            tab_list = st.tabs(kategori_list)
-
-            for tab, kat in zip(tab_list, kategori_list):
-                with tab:
-                    items = [m for m in menu_data if m["kategori"] == kat]
-                    cols = st.columns(2)
-                    for i, item in enumerate(items):
-                        with cols[i % 2]:
-                            with st.container(border=True):
-                                st.markdown(f"**{item['nama']}**")
-                                st.markdown(
-                                    f"<span style='color:#ff6b1a;font-weight:800;font-size:1rem'>"
-                                    f"{format_rupiah(item['harga'])}</span>",
-                                    unsafe_allow_html=True)
-                                qty = st.number_input("Qty", min_value=0, max_value=50, value=0,
-                                                      key=f"qty_{item['id']}", label_visibility="collapsed")
-                                if st.button("➕ Tambah", key=f"add_{item['id']}", use_container_width=True):
-                                    if qty > 0:
-                                        found = False
-                                        for k in st.session_state.keranjang:
-                                            if k["menu_id"] == item["id"]:
-                                                k["qty"] += qty
-                                                k["subtotal"] = k["qty"] * k["harga"]
-                                                found = True
-                                                break
-                                        if not found:
-                                            st.session_state.keranjang.append({
-                                                "menu_id": item["id"], "nama": item["nama"],
-                                                "harga": item["harga"], "qty": qty,
-                                                "subtotal": item["harga"] * qty
-                                            })
-                                        st.success(f"✅ {item['nama']} x{qty} ditambahkan!")
-                                        st.rerun()
-                                    else:
-                                        st.warning("Qty harus > 0")
-
-        with col_cart:
-            st.markdown("### 🧺 Pesanan")
-            if not st.session_state.keranjang:
-                st.markdown("""
-                <div style='text-align:center;padding:40px 20px;background:#fff7f2;
-                border-radius:14px;border:1.5px dashed #ffd4b0;color:#aaa'>
-                    <div style='font-size:2rem'>🛒</div>
-                    <div style='margin-top:8px;font-size:0.85rem'>Belum ada pesanan</div>
-                </div>
-                """, unsafe_allow_html=True)
-            else:
-                for idx, item in enumerate(st.session_state.keranjang):
-                    with st.container(border=True):
-                        c1, c2, c3 = st.columns([3, 2, 1])
-                        with c1:
-                            st.markdown(f"**{item['nama']}**")
-                            st.caption(f"x{item['qty']}")
-                        with c2:
-                            st.markdown(
-                                f"<div style='color:#ff6b1a;font-weight:700;padding-top:8px'>"
-                                f"{format_rupiah(item['subtotal'])}</div>",
-                                unsafe_allow_html=True)
-                        with c3:
-                            if st.button("🗑️", key=f"del_{idx}"):
-                                st.session_state.keranjang.pop(idx)
-                                st.rerun()
-
-                st.markdown("---")
-                total = sum(i["subtotal"] for i in st.session_state.keranjang)
-                st.markdown(
-                    f"<div style='background:#ff6b1a;color:#fff;border-radius:12px;"
-                    f"padding:14px 18px;text-align:center'>"
-                    f"<div style='font-size:0.75rem;opacity:0.85;letter-spacing:1px;text-transform:uppercase'>TOTAL</div>"
-                    f"<div style='font-family:Syne,sans-serif;font-size:1.6rem;font-weight:800'>{format_rupiah(total)}</div>"
-                    f"</div>",
-                    unsafe_allow_html=True)
-                st.markdown("<br>", unsafe_allow_html=True)
-
-                col_lanjut, col_reset = st.columns(2)
-                with col_lanjut:
-                    if st.button("💳 Lanjut Bayar →", type="primary", use_container_width=True):
-                        st.session_state.step = "bayar"
-                        st.rerun()
-                with col_reset:
-                    if st.button("🗑️ Kosongkan", use_container_width=True):
-                        st.session_state.keranjang = []
-                        st.rerun()
-
-    # ── STEP 2: PILIH METODE BAYAR ──────────────────────────────────
+    # ── STEP 2: BAYAR ──
     elif st.session_state.step == "bayar":
-        total = sum(i["subtotal"] for i in st.session_state.keranjang)
+        st.markdown("## 💳 Pembayaran")
 
-        st.markdown("## 💳 Pilih Metode Pembayaran")
+        keranjang = st.session_state.keranjang
+        total = sum(d['qty'] * d['harga'] for d in keranjang.values())
+
+        st.markdown(f"### Total: **{format_rupiah(total)}**")
+        for nama, d in keranjang.items():
+            st.write(f"• {nama} × {d['qty']} = {format_rupiah(d['qty'] * d['harga'])}")
         st.markdown("---")
 
-        col_sum, col_pay = st.columns([2, 3])
+        metode = st.radio("Metode Pembayaran", ["💵 Tunai", "📱 QRIS"], horizontal=True)
 
-        with col_sum:
-            st.markdown("### 📋 Ringkasan Pesanan")
-            for item in st.session_state.keranjang:
-                st.markdown(
-                    f"<div style='display:flex;justify-content:space-between;padding:6px 0;"
-                    f"border-bottom:1px solid #ffe0c0;font-size:0.9rem'>"
-                    f"<span>{item['nama']} <span style='color:#aaa'>x{item['qty']}</span></span>"
-                    f"<span style='font-weight:700'>{format_rupiah(item['subtotal'])}</span></div>",
-                    unsafe_allow_html=True)
-            st.markdown(
-                f"<div style='background:#ff6b1a;color:#fff;border-radius:12px;"
-                f"padding:14px 18px;text-align:center;margin-top:16px'>"
-                f"<div style='font-size:0.7rem;opacity:0.85;letter-spacing:1px;text-transform:uppercase'>TOTAL BAYAR</div>"
-                f"<div style='font-family:Syne,sans-serif;font-size:1.8rem;font-weight:800'>{format_rupiah(total)}</div>"
-                f"</div>",
-                unsafe_allow_html=True)
+        if metode == "💵 Tunai":
+            uang = st.number_input("Uang Diterima (Rp)", min_value=0, step=1000, value=total)
+            kembalian = max(0, uang - total)
+            st.info(f"💵 Kembalian: **{format_rupiah(kembalian)}**")
 
-        with col_pay:
-            st.markdown("### Pilih Cara Bayar")
-            st.markdown("<br>", unsafe_allow_html=True)
-
-            col_cash, col_qr = st.columns(2)
-
-            with col_cash:
-                st.markdown("""
-                <div style='background:#fff7f2;border:2px solid #ffd4b0;border-radius:16px;
-                padding:28px 20px;text-align:center;cursor:pointer'>
-                    <div style='font-size:2.5rem'>💵</div>
-                    <div style='font-family:Syne,sans-serif;font-weight:800;font-size:1.1rem;
-                    margin-top:10px;color:#1a1a1a'>TUNAI</div>
-                    <div style='font-size:0.75rem;color:#888;margin-top:4px'>Bayar dengan uang cash</div>
-                </div>
-                """, unsafe_allow_html=True)
-                st.markdown("<br>", unsafe_allow_html=True)
-                if st.button("Pilih Tunai", use_container_width=True, key="btn_cash"):
-                    st.session_state.step = "cash"
-                    st.rerun()
-
-            with col_qr:
-                st.markdown("""
-                <div style='background:#fff7f2;border:2px solid #ff6b1a;border-radius:16px;
-                padding:28px 20px;text-align:center;cursor:pointer;position:relative'>
-                    <div style='position:absolute;top:-10px;left:50%;transform:translateX(-50%);
-                    background:#ff6b1a;color:#fff;font-size:0.65rem;font-weight:700;
-                    padding:3px 12px;border-radius:20px;white-space:nowrap'>⚡ POPULER</div>
-                    <div style='font-size:2.5rem'>📱</div>
-                    <div style='font-family:Syne,sans-serif;font-weight:800;font-size:1.1rem;
-                    margin-top:10px;color:#1a1a1a'>QRIS</div>
-                    <div style='font-size:0.75rem;color:#888;margin-top:4px'>Scan QR Code bayar</div>
-                </div>
-                """, unsafe_allow_html=True)
-                st.markdown("<br>", unsafe_allow_html=True)
-                if st.button("Pilih QRIS", use_container_width=True, key="btn_qr"):
-                    st.session_state.step = "qris"
-                    st.rerun()
-
-            st.markdown("<br>", unsafe_allow_html=True)
-            if st.button("← Kembali ke Menu", use_container_width=True):
-                st.session_state.step = "menu"
-                st.rerun()
-
-    # ── STEP 3A: BAYAR TUNAI ────────────────────────────────────────
-    elif st.session_state.step == "cash":
-        total = sum(i["subtotal"] for i in st.session_state.keranjang)
-
-        st.markdown("## 💵 Pembayaran Tunai")
-        st.markdown("---")
-
-        col_l, col_r = st.columns([1, 1])
-        with col_l:
-            st.markdown(
-                f"<div style='background:#ff6b1a;color:#fff;border-radius:14px;"
-                f"padding:20px;text-align:center;margin-bottom:20px'>"
-                f"<div style='font-size:0.8rem;opacity:0.85;text-transform:uppercase;letter-spacing:1px'>Total Tagihan</div>"
-                f"<div style='font-family:Syne,sans-serif;font-size:2rem;font-weight:800'>{format_rupiah(total)}</div>"
-                f"</div>",
-                unsafe_allow_html=True)
-
-            uang_bayar = st.number_input("💵 Uang Diterima (Rp)", min_value=0, step=1000, value=total)
-            kembalian = max(0, uang_bayar - total)
-
-            if uang_bayar >= total and uang_bayar > 0:
-                st.markdown(
-                    f"<div style='background:#e8f5e9;border:1.5px solid #a5d6a7;border-radius:12px;"
-                    f"padding:14px;text-align:center;margin-top:10px'>"
-                    f"<div style='font-size:0.8rem;color:#2e7d32'>💰 Kembalian</div>"
-                    f"<div style='font-family:Syne,sans-serif;font-size:1.6rem;font-weight:800;color:#2e7d32'>"
-                    f"{format_rupiah(kembalian)}</div></div>",
-                    unsafe_allow_html=True)
-            elif uang_bayar > 0 and uang_bayar < total:
-                st.error(f"❌ Uang kurang {format_rupiah(total - uang_bayar)}")
-
-        with col_r:
-            st.markdown("#### 📋 Detail Pesanan")
-            for item in st.session_state.keranjang:
-                st.markdown(
-                    f"<div style='display:flex;justify-content:space-between;padding:5px 0;"
-                    f"border-bottom:1px solid #ffe0c0;font-size:0.85rem'>"
-                    f"<span>{item['nama']} x{item['qty']}</span>"
-                    f"<span style='font-weight:700'>{format_rupiah(item['subtotal'])}</span></div>",
-                    unsafe_allow_html=True)
-
-        st.markdown("<br>", unsafe_allow_html=True)
-        col_a, col_b, col_c = st.columns([2, 2, 1])
-        with col_a:
-            if st.button("✅ Konfirmasi Pembayaran", type="primary", use_container_width=True,
-                         disabled=uang_bayar < total):
-                try:
-                    nomor = generate_order_number()
-                    res = supabase.table("transaksi").insert({
-                        "nomor_order": nomor, "total": total, "metode_bayar": "Tunai",
-                        "uang_bayar": uang_bayar, "kembalian": kembalian, "status": "selesai"
-                    }).execute()
-                    trx_id = res.data[0]["id"]
-                    supabase.table("detail_transaksi").insert([{
-                        "transaksi_id": trx_id, "menu_id": item["menu_id"],
-                        "nama_menu": item["nama"], "harga": item["harga"],
-                        "qty": item["qty"], "subtotal": item["subtotal"]
-                    } for item in st.session_state.keranjang]).execute()
-                    st.session_state.keranjang = []
+            col1, col2 = st.columns(2)
+            with col1:
+                if st.button("← Kembali"):
                     st.session_state.step = "menu"
-                    st.success(f"🎉 Transaksi {nomor} berhasil!")
-                    st.balloons()
                     st.rerun()
-                except Exception as e:
-                    st.error(f"Gagal: {e}")
-        with col_b:
-            if st.button("← Ganti Metode", use_container_width=True):
-                st.session_state.step = "bayar"
-                st.rerun()
+            with col2:
+                if uang >= total and st.button("✅ Konfirmasi Bayar", use_container_width=True):
+                    _simpan_transaksi(supabase, keranjang, total, "Tunai", uang, kembalian)
 
-    # ── STEP 3B: BAYAR QRIS ─────────────────────────────────────────
-    elif st.session_state.step == "qris":
-        total = sum(i["subtotal"] for i in st.session_state.keranjang)
-        nomor_tagihan = generate_order_number()
-
-        st.markdown("## 📱 Pembayaran QRIS")
-        st.markdown("---")
-
-        col_qr, col_info = st.columns([1, 1])
-
-        with col_qr:
-            # Tampilan QR Code menggunakan qrcode API gratis
-            qr_data = f"CHICK&JUICE-FAEYZA|{nomor_tagihan}|{total}"
-            qr_url = f"https://api.qrserver.com/v1/create-qr-code/?size=280x280&data={qr_data}&bgcolor=ffffff&color=ff6b1a&qzone=2"
-
-            st.markdown(
-                f"<div style='background:#ffffff;border:2px solid #ff6b1a;border-radius:20px;"
-                f"padding:24px;text-align:center'>"
-                f"<div style='font-family:Syne,sans-serif;font-weight:800;font-size:0.8rem;"
-                f"color:#ff6b1a;text-transform:uppercase;letter-spacing:2px;margin-bottom:16px'>"
-                f"🍗 Chick & Juice Faeyza</div>"
-                f"<img src='{qr_url}' width='240' style='border-radius:12px;display:block;margin:0 auto'/>"
-                f"<div style='margin-top:16px;background:#fff7f2;border-radius:10px;padding:10px'>"
-                f"<div style='font-size:0.72rem;color:#888;text-transform:uppercase;letter-spacing:1px'>Total Pembayaran</div>"
-                f"<div style='font-family:Syne,sans-serif;font-size:1.5rem;font-weight:800;color:#ff6b1a'>"
-                f"{format_rupiah(total)}</div>"
-                f"<div style='font-size:0.7rem;color:#aaa;margin-top:4px'>{nomor_tagihan}</div>"
-                f"</div></div>",
-                unsafe_allow_html=True)
-
-        with col_info:
-            st.markdown("### Cara Bayar QRIS")
-            st.markdown("""
-            <div style='background:#ffffff;border:1.5px solid #ffd4b0;border-radius:14px;padding:20px'>
-                <div style='display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid #fff0e6'>
-                    <div style='background:#ff6b1a;color:#fff;width:28px;height:28px;border-radius:50%;
-                    display:flex;align-items:center;justify-content:center;font-weight:800;font-size:0.85rem;flex-shrink:0'>1</div>
-                    <div style='color:#1a1a1a;font-size:0.9rem'>Buka aplikasi <b>m-Banking</b> atau <b>e-Wallet</b> kamu</div>
-                </div>
-                <div style='display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid #fff0e6'>
-                    <div style='background:#ff6b1a;color:#fff;width:28px;height:28px;border-radius:50%;
-                    display:flex;align-items:center;justify-content:center;font-weight:800;font-size:0.85rem;flex-shrink:0'>2</div>
-                    <div style='color:#1a1a1a;font-size:0.9rem'>Pilih menu <b>Scan QR</b> atau <b>QRIS</b></div>
-                </div>
-                <div style='display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid #fff0e6'>
-                    <div style='background:#ff6b1a;color:#fff;width:28px;height:28px;border-radius:50%;
-                    display:flex;align-items:center;justify-content:center;font-weight:800;font-size:0.85rem;flex-shrink:0'>3</div>
-                    <div style='color:#1a1a1a;font-size:0.9rem'>Arahkan kamera ke <b>QR Code</b> di sebelah kiri</div>
-                </div>
-                <div style='display:flex;align-items:center;gap:12px;padding:10px 0'>
-                    <div style='background:#ff6b1a;color:#fff;width:28px;height:28px;border-radius:50%;
-                    display:flex;align-items:center;justify-content:center;font-weight:800;font-size:0.85rem;flex-shrink:0'>4</div>
-                    <div style='color:#1a1a1a;font-size:0.9rem'>Konfirmasi nominal & selesaikan pembayaran</div>
-                </div>
+        else:  # QRIS
+            nomor_order = generate_order_number()
+            qr_url = f"https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=QRIS-{nomor_order}-{total}"
+            st.markdown(f"""
+            <div style="text-align:center;padding:24px;background:#fff;border-radius:16px;border:2px dashed #FF6B2B">
+                <img src="{qr_url}" style="border-radius:12px;width:220px">
+                <p style="color:#FF6B2B;font-weight:700;font-size:18px;margin:12px 0 4px">{format_rupiah(total)}</p>
+                <p style="color:#888;font-size:13px">Order: {nomor_order}</p>
+                <p style="color:#555;font-size:13px">Scan QR ini dengan aplikasi e-wallet / mobile banking</p>
             </div>
             """, unsafe_allow_html=True)
 
-            st.markdown("<br>", unsafe_allow_html=True)
-            st.markdown("#### Detail Pesanan")
-            for item in st.session_state.keranjang:
-                st.markdown(
-                    f"<div style='display:flex;justify-content:space-between;padding:4px 0;"
-                    f"font-size:0.85rem;border-bottom:1px solid #ffe0c0'>"
-                    f"<span>{item['nama']} x{item['qty']}</span>"
-                    f"<span style='font-weight:700'>{format_rupiah(item['subtotal'])}</span></div>",
-                    unsafe_allow_html=True)
-
-            st.markdown("<br>", unsafe_allow_html=True)
-            col_a, col_b = st.columns(2)
-            with col_a:
-                if st.button("✅ Pembayaran Diterima", type="primary", use_container_width=True):
-                    try:
-                        res = supabase.table("transaksi").insert({
-                            "nomor_order": nomor_tagihan, "total": total,
-                            "metode_bayar": "QRIS", "uang_bayar": total,
-                            "kembalian": 0, "status": "selesai"
-                        }).execute()
-                        trx_id = res.data[0]["id"]
-                        supabase.table("detail_transaksi").insert([{
-                            "transaksi_id": trx_id, "menu_id": item["menu_id"],
-                            "nama_menu": item["nama"], "harga": item["harga"],
-                            "qty": item["qty"], "subtotal": item["subtotal"]
-                        } for item in st.session_state.keranjang]).execute()
-                        st.session_state.keranjang = []
-                        st.session_state.step = "menu"
-                        st.success(f"🎉 Transaksi {nomor_tagihan} berhasil!")
-                        st.balloons()
-                        st.rerun()
-                    except Exception as e:
-                        st.error(f"Gagal: {e}")
-            with col_b:
-                if st.button("← Ganti Metode", use_container_width=True):
-                    st.session_state.step = "bayar"
+            col1, col2 = st.columns(2)
+            with col1:
+                if st.button("← Kembali"):
+                    st.session_state.step = "menu"
                     st.rerun()
+            with col2:
+                if st.button("✅ Pembayaran Diterima", use_container_width=True):
+                    _simpan_transaksi(supabase, keranjang, total, "QRIS", total, 0)
+
+    # ── STEP 3: SUKSES ──
+    elif st.session_state.step == "sukses":
+        st.success("🎉 Transaksi berhasil disimpan!")
+        st.balloons()
+        st.markdown(f"**Order:** `{st.session_state.get('last_order','')}`")
+        st.markdown(f"**Total:** {format_rupiah(st.session_state.get('last_total', 0))}")
+        if st.button("🛒 Transaksi Baru", use_container_width=True):
+            st.session_state.keranjang = {}
+            st.session_state.step = "menu"
+            st.rerun()
 
 
-# ─────────────────────────────────────────────
-#  HALAMAN: STOK
-# ─────────────────────────────────────────────
-elif menu == "📦 Stok":
+def _simpan_transaksi(supabase, keranjang, total, metode, uang, kembalian):
+    try:
+        nomor = generate_order_number()
+        res = supabase.table("transaksi").insert({
+            "nomor_order": nomor, "total": total,
+            "metode_bayar": metode, "uang_bayar": uang,
+            "kembalian": kembalian, "status": "selesai"
+        }).execute()
+        trx_id = res.data[0]["id"]
+        details = [{"transaksi_id": trx_id, "menu_id": None,
+                    "nama_menu": nama, "harga": d["harga"],
+                    "qty": d["qty"], "subtotal": d["qty"]*d["harga"]}
+                   for nama, d in keranjang.items()]
+        supabase.table("detail_transaksi").insert(details).execute()
+        st.session_state.last_order = nomor
+        st.session_state.last_total = total
+        st.session_state.step = "sukses"
+        st.rerun()
+    except Exception as e:
+        st.error(f"Gagal simpan: {e}")
+
+
+# ══════════════════════════════════════════════════════════════
+# STOK
+# ══════════════════════════════════════════════════════════════
+def show_stok():
     supabase = get_supabase()
-
     st.markdown("## 📦 Manajemen Stok")
-    st.markdown("Pantau dan update stok bahan baku.")
-    st.markdown("---")
-
-    tab1, tab2, tab3 = st.tabs(["📋 Stok Bahan Baku", "🍽️ Kelola Menu", "➕ Tambah Bahan"])
-
-    with tab1:
-        try:
-            res = supabase.table("stok").select("*").order("nama_bahan").execute()
-            stok_data = res.data
-        except Exception as e:
-            st.error(f"Gagal memuat stok: {e}")
-            st.stop()
-
-        if not stok_data:
-            st.info("Belum ada data stok.")
-        else:
-            kritis = [s for s in stok_data if s["stok_saat_ini"] <= s["stok_minimum"]]
-            aman = [s for s in stok_data if s["stok_saat_ini"] > s["stok_minimum"]]
-            c1, c2, c3 = st.columns(3)
-            c1.metric("Total Bahan", len(stok_data))
-            c2.metric("✅ Stok Aman", len(aman))
-            c3.metric("⚠️ Stok Kritis", len(kritis),
-                      delta=f"-{len(kritis)}" if kritis else None, delta_color="inverse")
-            st.markdown("---")
-
-            df = pd.DataFrame(stok_data)
-            df["status"] = df.apply(lambda r: "🔴 Habis" if r["stok_saat_ini"] <= 0
-                                    else ("🟡 Hampir Habis" if r["stok_saat_ini"] <= r["stok_minimum"]
-                                          else "🟢 Aman"), axis=1)
-            df_show = df[["nama_bahan", "stok_saat_ini", "satuan", "stok_minimum", "status"]].copy()
-            df_show.columns = ["Nama Bahan", "Stok Saat Ini", "Satuan", "Stok Minimum", "Status"]
-            st.dataframe(df_show, use_container_width=True, hide_index=True)
-
-            st.markdown("### ✏️ Update Stok")
-            bahan_options = {s["nama_bahan"]: s for s in stok_data}
-            selected = st.selectbox("Pilih Bahan", list(bahan_options.keys()))
-            if selected:
-                item = bahan_options[selected]
-                col_a, col_b = st.columns(2)
-                with col_a:
-                    st.info(f"Stok saat ini: **{item['stok_saat_ini']} {item['satuan']}**")
-                with col_b:
-                    aksi = st.radio("Aksi", ["Tambah Stok", "Set Stok Baru"], horizontal=True)
-                jumlah = st.number_input(f"Jumlah ({item['satuan']})", min_value=0.0, step=0.5, value=1.0)
-                if st.button("💾 Simpan Perubahan", type="primary"):
-                    try:
-                        stok_baru = item["stok_saat_ini"] + jumlah if aksi == "Tambah Stok" else jumlah
-                        supabase.table("stok").update({"stok_saat_ini": stok_baru}) \
-                            .eq("id", item["id"]).execute()
-                        st.success(f"✅ Stok **{selected}** diperbarui: {stok_baru} {item['satuan']}")
-                        st.rerun()
-                    except Exception as e:
-                        st.error(f"Gagal update: {e}")
-
-    with tab2:
-        try:
-            res_menu = supabase.table("menu").select("*").order("kategori").execute()
-            menu_data = res_menu.data
-        except Exception as e:
-            st.error(f"Gagal memuat menu: {e}")
-            st.stop()
-
-        st.markdown("### 📋 Daftar Menu")
-        df_menu = pd.DataFrame(menu_data)
-        if not df_menu.empty:
-            df_menu["harga_fmt"] = df_menu["harga"].apply(format_rupiah)
-            df_menu["tersedia"] = df_menu["tersedia"].map({True: "✅ Aktif", False: "❌ Nonaktif"})
-            st.dataframe(df_menu[["nama", "kategori", "harga_fmt", "tersedia"]],
-                         column_config={"nama": "Nama Menu", "kategori": "Kategori",
-                                        "harga_fmt": "Harga", "tersedia": "Status"},
-                         use_container_width=True, hide_index=True)
-
-        st.markdown("### ➕ Tambah Menu Baru")
-        col1, col2 = st.columns(2)
-        with col1:
-            nama_menu = st.text_input("Nama Menu")
-            harga_menu = st.number_input("Harga (Rp)", min_value=0, step=500)
-        with col2:
-            kat_menu = st.selectbox("Kategori", ["Ayam", "Nasi", "Minuman", "Lauk", "Lainnya"])
-            tersedia = st.checkbox("Tersedia / Aktif", value=True)
-        if st.button("💾 Simpan Menu", type="primary"):
-            if nama_menu and harga_menu > 0:
-                try:
-                    supabase.table("menu").insert({"nama": nama_menu, "kategori": kat_menu,
-                                                   "harga": harga_menu, "tersedia": tersedia}).execute()
-                    st.success(f"✅ Menu **{nama_menu}** berhasil ditambahkan!")
-                    st.rerun()
-                except Exception as e:
-                    st.error(f"Gagal: {e}")
-            else:
-                st.warning("Nama menu dan harga harus diisi.")
-
-    with tab3:
-        st.markdown("### ➕ Tambah Bahan Baru")
-        col1, col2 = st.columns(2)
-        with col1:
-            nama_bahan = st.text_input("Nama Bahan")
-            satuan = st.selectbox("Satuan", ["kg", "gram", "liter", "ml", "pcs", "butir", "ikat", "bungkus"])
-        with col2:
-            stok_awal = st.number_input("Stok Awal", min_value=0.0, step=0.5)
-            stok_min = st.number_input("Stok Minimum (alert)", min_value=0.0, step=0.5)
-        if st.button("💾 Tambah Bahan", type="primary"):
-            if nama_bahan:
-                try:
-                    supabase.table("stok").insert({"nama_bahan": nama_bahan, "satuan": satuan,
-                                                   "stok_saat_ini": stok_awal, "stok_minimum": stok_min}).execute()
-                    st.success(f"✅ Bahan **{nama_bahan}** berhasil ditambahkan!")
-                    st.rerun()
-                except Exception as e:
-                    st.error(f"Gagal: {e}")
-            else:
-                st.warning("Nama bahan harus diisi.")
-
-
-# ─────────────────────────────────────────────
-#  HALAMAN: LAPORAN
-# ─────────────────────────────────────────────
-elif menu == "📊 Laporan":
-    supabase = get_supabase()
-
-    st.markdown("## 📊 Laporan Penjualan")
-    st.markdown("Analisis real-time omset dan performa menu.")
-    st.markdown("---")
-
-    col_f1, col_f2, col_f3 = st.columns([2, 2, 1])
-    with col_f1:
-        tgl_awal = st.date_input("Dari Tanggal", value=date.today() - timedelta(days=7))
-    with col_f2:
-        tgl_akhir = st.date_input("Sampai Tanggal", value=date.today())
-    with col_f3:
-        st.markdown("<div style='height:28px'></div>", unsafe_allow_html=True)
-        st.button("🔄 Refresh", use_container_width=True)
-
-    if tgl_awal > tgl_akhir:
-        st.error("Tanggal awal tidak boleh lebih besar dari tanggal akhir.")
-        st.stop()
 
     try:
-        res_trx = supabase.table("transaksi").select("*") \
-            .gte("created_at", f"{tgl_awal}T00:00:00") \
-            .lte("created_at", f"{tgl_akhir}T23:59:59") \
-            .order("created_at", desc=True).execute()
-        trx_list = res_trx.data
+        res = supabase.table("stok").select("*").execute()
+        if not res.data:
+            st.info("Belum ada data stok.")
+            return
+        df = pd.DataFrame(res.data)
 
-        res_detail = supabase.table("detail_transaksi").select("*, transaksi(created_at)").execute()
-        detail_list = [d for d in res_detail.data
-                       if d.get("transaksi") and
-                       tgl_awal.isoformat() <= d["transaksi"]["created_at"][:10] <= tgl_akhir.isoformat()]
+        st.markdown("### 📋 Stok Bahan Baku")
+        for _, r in df.iterrows():
+            persen = min(100, int(r['stok_saat_ini'] / max(r['stok_minimum'], 1) * 100)) if r['stok_minimum'] > 0 else 100
+            warna  = "🟢" if persen > 100 else "🟡" if persen > 50 else "🔴"
+            col1, col2, col3 = st.columns([3, 1, 2])
+            col1.write(f"{warna} **{r['nama_bahan']}**")
+            col2.write(f"{r['stok_saat_ini']} {r['satuan']}")
+            col3.progress(min(persen, 100), text=f"Min: {r['stok_minimum']}")
+
+        st.markdown("---")
+        st.markdown("### ✏️ Update Stok")
+        nama_list = df["nama_bahan"].tolist()
+        pilih     = st.selectbox("Pilih bahan", nama_list)
+        baris     = df[df["nama_bahan"] == pilih].iloc[0]
+        stok_baru = st.number_input(f"Stok baru ({baris['satuan']})",
+                                    value=float(baris["stok_saat_ini"]), min_value=0.0, step=0.5)
+        if st.button("💾 Simpan Stok", use_container_width=True):
+            supabase.table("stok").update({"stok_saat_ini": stok_baru,
+                                           "updated_at": datetime.now().isoformat()})\
+                                  .eq("id", int(baris["id"])).execute()
+            st.success(f"✅ Stok **{pilih}** diperbarui menjadi {stok_baru} {baris['satuan']}")
+            st.rerun()
+
     except Exception as e:
-        st.error(f"Gagal memuat laporan: {e}")
-        st.stop()
+        st.error(f"Error: {e}")
 
-    if not trx_list:
-        st.info("Tidak ada transaksi pada periode yang dipilih.")
-        st.stop()
 
-    total_omset = sum(t["total"] for t in trx_list)
-    total_trx = len(trx_list)
-    total_item = sum(d["qty"] for d in detail_list)
+# ══════════════════════════════════════════════════════════════
+# LAPORAN (admin only)
+# ══════════════════════════════════════════════════════════════
+def show_laporan():
+    supabase = get_supabase()
+    st.markdown("## 📊 Laporan Penjualan")
 
-    c1, c2, c3, c4 = st.columns(4)
-    c1.metric("💰 Total Omset", format_rupiah(total_omset))
-    c2.metric("🧾 Jumlah Transaksi", total_trx)
-    c3.metric("📈 Rata-rata/Transaksi", format_rupiah(total_omset // total_trx if total_trx > 0 else 0))
-    c4.metric("🍗 Item Terjual", total_item)
+    col1, col2 = st.columns(2)
+    with col1:
+        tgl_awal = st.date_input("Dari tanggal", value=date.today() - timedelta(days=7))
+    with col2:
+        tgl_akhir = st.date_input("Sampai tanggal", value=date.today())
 
-    st.markdown("---")
-    col_l, col_r = st.columns([3, 2])
+    try:
+        res = supabase.table("transaksi").select("*").execute()
+        if not res.data:
+            st.info("Belum ada data transaksi.")
+            return
+        df = pd.DataFrame(res.data)
+        df["created_at"] = pd.to_datetime(df["created_at"])
+        df["tanggal"]    = df["created_at"].dt.date
+        df_filter = df[(df["tanggal"] >= tgl_awal) & (df["tanggal"] <= tgl_akhir)]
 
-    with col_l:
-        st.markdown("### 📈 Omset per Hari")
-        df_trx = pd.DataFrame(trx_list)
-        df_trx["tanggal"] = pd.to_datetime(df_trx["created_at"]).dt.date
-        omset_harian = df_trx.groupby("tanggal")["total"].sum().reset_index()
-        omset_harian.columns = ["Tanggal", "Omset (Rp)"]
-        st.bar_chart(omset_harian.set_index("Tanggal"), color="#ff6b00")
+        if df_filter.empty:
+            st.info("Tidak ada transaksi di rentang tanggal tersebut.")
+            return
 
-    with col_r:
-        st.markdown("### 💳 Metode Pembayaran")
-        metode_count = df_trx["metode_bayar"].value_counts().reset_index()
-        metode_count.columns = ["Metode", "Jumlah"]
-        st.dataframe(metode_count, use_container_width=True, hide_index=True)
+        col1, col2, col3 = st.columns(3)
+        col1.metric("💰 Total Omset",   format_rupiah(df_filter["total"].sum()))
+        col2.metric("🧾 Transaksi",      len(df_filter))
+        col3.metric("📊 Rata-rata/hari", format_rupiah(df_filter["total"].mean()))
 
-        st.markdown("### ⏰ Jam Tersibuk")
-        df_trx["jam"] = pd.to_datetime(df_trx["created_at"]).dt.hour
-        jam_count = df_trx.groupby("jam").size().reset_index(name="Transaksi")
-        if not jam_count.empty:
-            peak = jam_count.loc[jam_count["Transaksi"].idxmax()]
-            st.info(f"🔥 Jam paling ramai: **{int(peak['jam']):02d}:00** ({peak['Transaksi']} transaksi)")
+        st.markdown("---")
+        st.markdown("### 📈 Grafik Omset Harian")
+        grafik = df_filter.groupby("tanggal")["total"].sum().reset_index()
+        st.line_chart(grafik.set_index("tanggal"))
 
-    st.markdown("---")
-    st.markdown("### 🏆 Menu Terlaris")
-    if detail_list:
-        df_detail = pd.DataFrame(detail_list)
-        menu_laris = df_detail.groupby("nama_menu").agg(
-            Total_Qty=("qty", "sum"), Total_Pendapatan=("subtotal", "sum")
-        ).sort_values("Total_Qty", ascending=False).reset_index()
-        menu_laris["Total_Pendapatan"] = menu_laris["Total_Pendapatan"].apply(format_rupiah)
-        menu_laris.columns = ["Nama Menu", "Qty Terjual", "Total Pendapatan"]
+        st.markdown("---")
+        st.markdown("### 📄 Riwayat Transaksi")
+        tampil = df_filter[["nomor_order","total","metode_bayar","status","tanggal"]].copy()
+        tampil["total"] = tampil["total"].apply(format_rupiah)
+        st.dataframe(tampil, use_container_width=True)
 
-        col_rank, col_chart = st.columns([2, 3])
-        with col_rank:
-            st.dataframe(menu_laris, use_container_width=True, hide_index=True)
-        with col_chart:
-            top5 = df_detail.groupby("nama_menu")["qty"].sum().nlargest(5)
-            st.bar_chart(top5, color="#ff9a00")
+        st.download_button("⬇️ Export CSV", df_filter.to_csv(index=False).encode("utf-8"),
+                           "laporan.csv", "text/csv", use_container_width=True)
 
-    st.markdown("---")
-    st.markdown("### 🧾 Riwayat Transaksi")
-    df_show = df_trx[["nomor_order", "total", "metode_bayar", "status", "created_at"]].copy()
-    df_show["total"] = df_show["total"].apply(format_rupiah)
-    df_show["created_at"] = pd.to_datetime(df_show["created_at"]).dt.strftime("%d/%m/%Y %H:%M")
-    df_show.columns = ["No. Order", "Total", "Pembayaran", "Status", "Waktu"]
-    st.dataframe(df_show, use_container_width=True, hide_index=True)
+    except Exception as e:
+        st.error(f"Error: {e}")
 
-    csv = df_show.to_csv(index=False).encode("utf-8")
-    st.download_button("⬇️ Download CSV", csv,
-                       file_name=f"laporan_{tgl_awal}_{tgl_akhir}.csv", mime="text/csv")
+
+# ══════════════════════════════════════════════════════════════
+# MAIN
+# ══════════════════════════════════════════════════════════════
+def main():
+    # Init session state
+    if "logged_in" not in st.session_state:
+        st.session_state.logged_in = False
+
+    if not st.session_state.logged_in:
+        show_login()
+        return
+
+    menu = show_sidebar()
+    role = st.session_state.role
+
+    # Akses kontrol
+    if menu == "🏠 Dashboard":
+        if role == "admin":
+            show_dashboard()
+        else:
+            st.warning("⛔ Akses ditolak. Menu ini hanya untuk Admin.")
+
+    elif menu == "🛒 Kasir":
+        show_kasir()
+
+    elif menu == "📦 Stok":
+        show_stok()
+
+    elif menu == "📊 Laporan":
+        if role == "admin":
+            show_laporan()
+        else:
+            st.warning("⛔ Akses ditolak. Menu ini hanya untuk Admin.")
+
+
+if __name__ == "__main__":
+    main()
