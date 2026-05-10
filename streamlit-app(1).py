@@ -352,13 +352,15 @@ def show_dashboard():
 # KASIR
 # ══════════════════════════════════════════════════════════════
 BAGIAN_AYAM = [
-    {"nama": "Paha Bawah Geprek",  "harga": 15000, "emoji": "🍗", "deskripsi": "Juicy & gurih"},
-    {"nama": "Paha Atas Geprek",   "harga": 16000, "emoji": "🍗", "deskripsi": "Daging tebal"},
-    {"nama": "Dada Geprek",        "harga": 17000, "emoji": "🍗", "deskripsi": "Rendah lemak"},
-    {"nama": "Sayap Geprek",       "harga": 13000, "emoji": "🍗", "deskripsi": "Crispy & renyah"},
-    {"nama": "Geprek Keju",        "harga": 20000, "emoji": "🧀", "deskripsi": "+ keju leleh"},
-    {"nama": "Geprek Mozarela",    "harga": 22000, "emoji": "🧀", "deskripsi": "+ mozarela"},
-    {"nama": "Geprek Pedas Gila",  "harga": 17000, "emoji": "🌶️", "deskripsi": "Level pedas max"},
+    {"nama": "Paha Bawah Geprek",  "harga": 12000, "emoji": "🍗", "deskripsi": "Juicy & gurih"},
+    {"nama": "Paha Atas Geprek",   "harga": 12000, "emoji": "🍗", "deskripsi": "Daging tebal"},
+    {"nama": "Dada Geprek",        "harga": 12000, "emoji": "🍗", "deskripsi": "Rendah lemak"},
+    {"nama": "Sayap Geprek",       "harga": 12000, "emoji": "🍗", "deskripsi": "Crispy & renyah"},
+    {"nama": "Paha Bawah",         "harga": 9000, "emoji": "🍗", "deskripsi": "Juicy & gurih"},
+    {"nama": "Paha Atas",          "harga": 9000, "emoji": "🍗", "deskripsi": "Daging tebal"},
+    {"nama": "Dada",               "harga": 9000, "emoji": "🍗", "deskripsi": "Rendah lemak"},
+    {"nama": "Sayap",              "harga": 9000, "emoji": "🍗", "deskripsi": "Crispy & renyah"},
+ 
 ]
 
 def show_kasir():
