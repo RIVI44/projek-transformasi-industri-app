@@ -822,7 +822,26 @@ def show_laporan():
         st.markdown("---")
         st.markdown("### 📈 Grafik Omset Harian")
         grafik = df_filter.groupby("tanggal")["total"].sum().reset_index()
-        st.line_chart(grafik.set_index("tanggal"))
+        grafik["tanggal"] = grafik["tanggal"].astype(str)
+
+        import plotly.express as px
+        fig = px.bar(
+            grafik, x="tanggal", y="total",
+            labels={"tanggal": "Tanggal", "total": "Omset (Rp)"},
+            color_discrete_sequence=["#C0392B"],
+            template="plotly_white",
+        )
+        fig.update_layout(
+            plot_bgcolor="#FFF8F0",
+            paper_bgcolor="#FFF8F0",
+            font_color="#1a1a1a",
+            showlegend=False,
+            margin=dict(l=0, r=0, t=10, b=0),
+            yaxis=dict(gridcolor="#F5CBA7", tickfont=dict(color="#1a1a1a", size=12)),
+            xaxis=dict(showgrid=False, tickfont=dict(color="#1a1a1a", size=12)),
+        )
+        fig.update_traces(marker_line_width=0)
+        st.plotly_chart(fig, use_container_width=True)
 
         st.markdown("---")
         st.markdown("### 📄 Riwayat Transaksi")
