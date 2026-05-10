@@ -27,25 +27,37 @@ MENU_BY_ROLE = {
 # ── CSS ───────────────────────────────────────────────────────
 st.markdown("""
 <style>
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&display=swap');
+
 /* ── Global ── */
 html, body, [class*="css"] {
-    background-color: #fdf5ec !important;
-    color: #1a1a1a !important;
-    font-family: 'Segoe UI', sans-serif;
+    background-color: #FFF8F0 !important;
+    color: #2C1810 !important;
+    font-family: 'Poppins', 'Segoe UI', sans-serif !important;
+}
+
+/* ── Animated gradient background ── */
+[data-testid="stAppViewContainer"] {
+    background: linear-gradient(135deg, #FFF8F0 0%, #FFF0E0 50%, #FFF8F0 100%) !important;
 }
 
 /* ── Sidebar ── */
 [data-testid="stSidebar"] {
-    background: linear-gradient(180deg, #FF6B2B 0%, #E8490A 100%) !important;
-    min-width: 200px !important;
-    max-width: 220px !important;
+    background: linear-gradient(180deg, #C0392B 0%, #7B241C 60%, #641E16 100%) !important;
+    min-width: 210px !important;
+    max-width: 225px !important;
+    border-right: 3px solid #F1C40F !important;
+    box-shadow: 4px 0 20px rgba(192,57,43,0.3) !important;
 }
 [data-testid="stSidebar"] * { color: #fff !important; }
-[data-testid="stSidebar"] .stRadio label { font-size: 15px !important; }
-[data-testid="stSidebarNavSeparator"] { background-color: rgba(255,255,255,0.2); }
+[data-testid="stSidebar"] .stRadio label {
+    font-size: 14px !important;
+    font-weight: 600 !important;
+    padding: 6px 0 !important;
+}
 [data-testid="stSidebar"] [data-testid="stMarkdownContainer"] p {
-    color: rgba(255,255,255,0.85) !important;
-    font-size: 13px;
+    color: rgba(255,255,255,0.8) !important;
+    font-size: 12px;
 }
 
 /* ── Arrow toggle putih ── */
@@ -54,70 +66,130 @@ button[kind="header"] svg { color: #fff !important; }
 
 /* ── Metric cards ── */
 [data-testid="metric-container"] {
-    background: #fff;
-    border-radius: 12px;
-    padding: 16px;
-    border-left: 4px solid #FF6B2B;
-    color: #1a1a1a !important;
+    background: linear-gradient(135deg, #fff 60%, #FFF8E1 100%) !important;
+    border-radius: 16px !important;
+    padding: 20px 16px !important;
+    border-top: 4px solid #F1C40F !important;
+    border-left: none !important;
+    box-shadow: 0 6px 20px rgba(192,57,43,0.10) !important;
+    color: #2C1810 !important;
 }
-[data-testid="metric-container"] label,
-[data-testid="metric-container"] div { color: #1a1a1a !important; }
+[data-testid="metric-container"] label { color: #7B241C !important; font-weight: 700 !important; }
+[data-testid="metric-container"] div   { color: #2C1810 !important; }
 
 /* ── Buttons ── */
 .stButton > button {
-    background: #FF6B2B;
+    background: linear-gradient(135deg, #E74C3C 0%, #C0392B 100%) !important;
     color: #fff !important;
-    border: none;
-    border-radius: 8px;
-    font-weight: 600;
-    padding: 8px 20px;
+    border: none !important;
+    border-radius: 10px !important;
+    font-weight: 700 !important;
+    font-size: 14px !important;
+    padding: 10px 22px !important;
+    box-shadow: 0 4px 14px rgba(231,76,60,0.35) !important;
+    transition: all 0.2s ease !important;
+    letter-spacing: 0.3px !important;
 }
-.stButton > button:hover { background: #E8490A; }
+.stButton > button:hover {
+    background: linear-gradient(135deg, #F1C40F 0%, #D4AC0D 100%) !important;
+    color: #2C1810 !important;
+    box-shadow: 0 6px 18px rgba(241,196,15,0.4) !important;
+    transform: translateY(-1px) !important;
+}
 
 /* ── Cards ── */
 .card {
-    background: #fff;
-    border-radius: 12px;
-    padding: 16px;
-    margin-bottom: 12px;
-    border: 1px solid #f0e0d0;
+    background: linear-gradient(135deg, #fff 70%, #FFF8E1 100%);
+    border-radius: 16px;
+    border-top: 3px solid #F1C40F;
+    box-shadow: 0 4px 16px rgba(192,57,43,0.08);
+    padding: 18px;
+    margin-bottom: 14px;
+}
+.card:hover {
+    box-shadow: 0 8px 24px rgba(192,57,43,0.15);
+    transform: translateY(-2px);
+    transition: all 0.2s ease;
 }
 
 /* ── Login box ── */
 .login-box {
     background: #fff;
-    border-radius: 16px;
-    padding: 40px;
-    max-width: 400px;
-    margin: 60px auto;
-    box-shadow: 0 4px 24px rgba(255,107,43,0.12);
-    border-top: 4px solid #FF6B2B;
+    border-radius: 20px;
+    padding: 44px;
+    max-width: 420px;
+    margin: 50px auto;
+    box-shadow: 0 8px 32px rgba(192,57,43,0.15);
+    border-top: 5px solid #F1C40F;
+    border-bottom: 2px solid #E74C3C;
 }
 
 /* ── Badge role ── */
 .badge-admin {
-    background: #FF6B2B; color: #fff;
-    padding: 3px 10px; border-radius: 20px;
-    font-size: 12px; font-weight: 600;
+    background: linear-gradient(135deg, #E74C3C, #C0392B);
+    color: #fff;
+    padding: 4px 14px; border-radius: 20px;
+    font-size: 12px; font-weight: 700;
+    box-shadow: 0 2px 8px rgba(231,76,60,0.35);
 }
 .badge-kasir {
-    background: #4a90d9; color: #fff;
-    padding: 3px 10px; border-radius: 20px;
-    font-size: 12px; font-weight: 600;
+    background: linear-gradient(135deg, #F1C40F, #D4AC0D);
+    color: #2C1810;
+    padding: 4px 14px; border-radius: 20px;
+    font-size: 12px; font-weight: 700;
+    box-shadow: 0 2px 8px rgba(241,196,15,0.35);
 }
 
 /* ── Inputs ── */
-.stTextInput input, .stNumberInput input, .stSelectbox select {
-    border-radius: 8px !important;
-    border: 1.5px solid #f0d5c0 !important;
+.stTextInput input, .stNumberInput input {
+    border-radius: 10px !important;
+    border: 2px solid #F5CBA7 !important;
+    background: #FFFDF7 !important;
+    color: #2C1810 !important;
 }
-input:focus { border-color: #FF6B2B !important; }
+.stTextInput input:focus { border-color: #E74C3C !important; }
+
+/* ── Tabs ── */
+.stTabs [data-baseweb="tab-list"] {
+    background: #fff !important;
+    border-radius: 12px !important;
+    padding: 4px !important;
+    box-shadow: 0 2px 10px rgba(192,57,43,0.08) !important;
+}
+.stTabs [aria-selected="true"] {
+    background: linear-gradient(135deg, #E74C3C, #C0392B) !important;
+    color: #fff !important;
+    border-radius: 10px !important;
+}
 
 /* ── Tables ── */
-.stDataFrame { border-radius: 10px; overflow: hidden; }
+.stDataFrame {
+    border-radius: 14px !important;
+    overflow: hidden !important;
+    box-shadow: 0 4px 16px rgba(192,57,43,0.08) !important;
+    border: 1px solid #F5CBA7 !important;
+}
+
+/* ── Progress bar ── */
+.stProgress > div > div {
+    background: linear-gradient(90deg, #E74C3C, #F1C40F) !important;
+    border-radius: 8px !important;
+}
+
+/* ── Alerts ── */
+.stSuccess { background: #EAFAF1 !important; border-left: 4px solid #27AE60 !important; border-radius: 10px !important; }
+.stWarning { background: #FEF9E7 !important; border-left: 4px solid #F1C40F !important; border-radius: 10px !important; }
+.stError   { background: #FDEDEC !important; border-left: 4px solid #E74C3C !important; border-radius: 10px !important; }
 
 /* ── General text ── */
-h1, h2, h3, p, label, span, div { color: #1a1a1a; }
+h1, h2, h3 { color: #7B241C !important; font-weight: 800 !important; }
+h4, h5, p, label, span { color: #2C1810 !important; }
+hr { border-color: #F5CBA7 !important; }
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: #FFF0E0; }
+::-webkit-scrollbar-thumb { background: #E74C3C; border-radius: 8px; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -155,7 +227,7 @@ def show_login():
     <div class="login-box">
         <div style="text-align:center;margin-bottom:24px">
             <span style="font-size:48px">🍗</span>
-            <h2 style="color:#FF6B2B;margin:8px 0 4px">Chick & Juice Faeyza</h2>
+            <h2 style="color:#C0392B;margin:8px 0 4px;font-weight:800">Chick & Juice Faeyza</h2>
             <p style="color:#888;font-size:14px">Sistem Kasir Cloud</p>
         </div>
     </div>
@@ -195,17 +267,17 @@ def show_sidebar():
 
     with st.sidebar:
         st.markdown(f"""
-        <div style="text-align:center;padding:12px 0 8px">
-            <span style="font-size:36px">🍗</span>
-            <h3 style="margin:4px 0;color:#fff">Chick & Juice</h3>
-            <p style="font-size:11px;color:rgba(255,255,255,0.7);margin:0">Faeyza</p>
+        <div style="text-align:center;padding:16px 0 10px">
+            <span style="font-size:40px">🍗</span>
+            <h3 style="margin:6px 0 2px;color:#fff;font-weight:800;letter-spacing:0.5px">Chick & Juice</h3>
+            <p style="font-size:12px;color:#F1C40F;margin:0;font-weight:700;letter-spacing:2px">FAEYZA</p>
         </div>
-        <hr style="border-color:rgba(255,255,255,0.2);margin:8px 0">
-        <div style="text-align:center;margin-bottom:12px">
+        <hr style="border-color:#F1C40F;opacity:0.4;margin:8px 0">
+        <div style="text-align:center;margin-bottom:14px">
             <span class="badge-{'admin' if role=='admin' else 'kasir'}">
                 {'👑 Admin' if role=='admin' else '🧑‍💼 Kasir'}
             </span>
-            <p style="font-size:12px;color:rgba(255,255,255,0.8);margin:6px 0 0">{username}</p>
+            <p style="font-size:12px;color:rgba(255,255,255,0.85);margin:8px 0 0;font-weight:600">{username}</p>
         </div>
         """, unsafe_allow_html=True)
 
@@ -319,9 +391,9 @@ def show_kasir():
                         st.markdown(f"""
                         <div class="card" style="text-align:center">
                             <div style="font-size:36px">{item['emoji']}</div>
-                            <b style="font-size:14px">{item['nama']}</b><br>
-                            <span style="color:#888;font-size:12px">{item['deskripsi']}</span><br>
-                            <span style="color:#FF6B2B;font-weight:700">{format_rupiah(item['harga'])}</span>
+                            <b style="font-size:14px;color:#2C1810">{item['nama']}</b><br>
+                            <span style="color:#999;font-size:12px">{item['deskripsi']}</span><br>
+                            <span style="color:#C0392B;font-weight:800;font-size:15px">{format_rupiah(item['harga'])}</span>
                         </div>
                         """, unsafe_allow_html=True)
                         qty = st.number_input("Qty", min_value=0, max_value=99,
@@ -343,8 +415,8 @@ def show_kasir():
                     with cols[i % 3]:
                         st.markdown(f"""
                         <div class="card" style="text-align:center">
-                            <b>{item['nama']}</b><br>
-                            <span style="color:#FF6B2B;font-weight:700">{format_rupiah(item['harga'])}</span>
+                            <b style="color:#2C1810">{item['nama']}</b><br>
+                            <span style="color:#C0392B;font-weight:800;font-size:15px">{format_rupiah(item['harga'])}</span>
                         </div>
                         """, unsafe_allow_html=True)
                         qty = st.number_input("Qty", min_value=0, max_value=99,
@@ -410,11 +482,11 @@ def show_kasir():
             nomor_order = generate_order_number()
             qr_url = f"https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=QRIS-{nomor_order}-{total}"
             st.markdown(f"""
-            <div style="text-align:center;padding:24px;background:#fff;border-radius:16px;border:2px dashed #FF6B2B">
-                <img src="{qr_url}" style="border-radius:12px;width:220px">
-                <p style="color:#FF6B2B;font-weight:700;font-size:18px;margin:12px 0 4px">{format_rupiah(total)}</p>
-                <p style="color:#888;font-size:13px">Order: {nomor_order}</p>
-                <p style="color:#555;font-size:13px">Scan QR ini dengan aplikasi e-wallet / mobile banking</p>
+            <div style="text-align:center;padding:28px;background:linear-gradient(135deg,#fff 60%,#FFF8E1 100%);border-radius:20px;border:2px dashed #E74C3C;box-shadow:0 6px 20px rgba(192,57,43,0.12)">
+                <img src="{qr_url}" style="border-radius:12px;width:220px;border:3px solid #F1C40F">
+                <p style="color:#C0392B;font-weight:800;font-size:20px;margin:14px 0 4px">{format_rupiah(total)}</p>
+                <p style="color:#7B241C;font-size:13px;font-weight:600">Order: {nomor_order}</p>
+                <p style="color:#888;font-size:12px">Scan QR ini dengan aplikasi e-wallet / mobile banking</p>
             </div>
             """, unsafe_allow_html=True)
 
