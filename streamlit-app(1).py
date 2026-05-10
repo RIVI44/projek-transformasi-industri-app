@@ -359,13 +359,18 @@ def show_dashboard():
             df_chart = pd.DataFrame({"Tanggal": label7, "Omset (Rp)": omset7}).set_index("Tanggal")
 
             # Grafik pakai plotly supaya warna bisa disesuaikan
-            import plotly.express as px
-            fig = px.bar(
-                df_chart.reset_index(),
-                x="Tanggal", y="Omset (Rp)",
-                color_discrete_sequence=["#C0392B"],
-                template="plotly_white",
-            )
+            import plotly.graph_objects as go
+            fig = go.Figure()
+            fig.add_trace(go.Scatter(
+                x=label7,
+                y=omset7,
+                mode="lines+markers",
+                line=dict(color="#C0392B", width=3),
+                marker=dict(color="#F1C40F", size=9, line=dict(color="#C0392B", width=2)),
+                fill="tozeroy",
+                fillcolor="rgba(192,57,43,0.08)",
+                hovertemplate="<b>%{x}</b><br>Omset: Rp %{y:,.0f}<extra></extra>",
+            ))
             fig.update_layout(
                 plot_bgcolor="#FFF8F0",
                 paper_bgcolor="#FFF8F0",
@@ -375,15 +380,15 @@ def show_dashboard():
                 yaxis=dict(
                     gridcolor="#F5CBA7",
                     tickfont=dict(color="#1a1a1a", size=12),
-                    title_font=dict(color="#1a1a1a"),
+                    title=None,
                 ),
                 xaxis=dict(
                     showgrid=False,
                     tickfont=dict(color="#1a1a1a", size=12),
-                    title_font=dict(color="#1a1a1a"),
+                    title=None,
                 ),
+                hovermode="x unified",
             )
-            fig.update_traces(marker_line_width=0, marker_color="#C0392B")
             st.plotly_chart(fig, use_container_width=True)
         else:
             st.info("Belum ada data transaksi.")
@@ -822,25 +827,38 @@ def show_laporan():
         st.markdown("---")
         st.markdown("### 📈 Grafik Omset Harian")
         grafik = df_filter.groupby("tanggal")["total"].sum().reset_index()
-        grafik["tanggal"] = grafik["tanggal"].astype(str)
+        grafik["tanggal"] = pd.to_datetime(grafik["tanggal"]).dt.strftime("%d %b")
 
-        import plotly.express as px
-        fig = px.bar(
-            grafik, x="tanggal", y="total",
-            labels={"tanggal": "Tanggal", "total": "Omset (Rp)"},
-            color_discrete_sequence=["#C0392B"],
-            template="plotly_white",
-        )
+        import plotly.graph_objects as go
+        fig = go.Figure()
+        fig.add_trace(go.Scatter(
+            x=grafik["tanggal"],
+            y=grafik["total"],
+            mode="lines+markers",
+            line=dict(color="#C0392B", width=3),
+            marker=dict(color="#F1C40F", size=9, line=dict(color="#C0392B", width=2)),
+            fill="tozeroy",
+            fillcolor="rgba(192,57,43,0.08)",
+            hovertemplate="<b>%{x}</b><br>Omset: Rp %{y:,.0f}<extra></extra>",
+        ))
         fig.update_layout(
             plot_bgcolor="#FFF8F0",
             paper_bgcolor="#FFF8F0",
             font_color="#1a1a1a",
             showlegend=False,
             margin=dict(l=0, r=0, t=10, b=0),
-            yaxis=dict(gridcolor="#F5CBA7", tickfont=dict(color="#1a1a1a", size=12)),
-            xaxis=dict(showgrid=False, tickfont=dict(color="#1a1a1a", size=12)),
+            yaxis=dict(
+                gridcolor="#F5CBA7",
+                tickfont=dict(color="#1a1a1a", size=12),
+                title=None,
+            ),
+            xaxis=dict(
+                showgrid=False,
+                tickfont=dict(color="#1a1a1a", size=12),
+                title=None,
+            ),
+            hovermode="x unified",
         )
-        fig.update_traces(marker_line_width=0)
         st.plotly_chart(fig, use_container_width=True)
 
         st.markdown("---")
