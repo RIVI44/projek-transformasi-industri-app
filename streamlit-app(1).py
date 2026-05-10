@@ -429,12 +429,47 @@ def show_kasir():
         st.markdown("---")
         st.markdown("### 🧺 Keranjang")
         if st.session_state.keranjang:
-            total = 0
+            total_sebelum = 0
             for nama, d in st.session_state.keranjang.items():
                 subtotal = d['qty'] * d['harga']
-                total += subtotal
+                total_sebelum += subtotal
                 st.write(f"• **{nama}** × {d['qty']} = {format_rupiah(subtotal)}")
-            st.markdown(f"### 💰 Total: **{format_rupiah(total)}**")
+
+            # ── Hitung diskon paket ──
+            nama_keranjang = list(st.session_state.keranjang.keys())
+            punya_ayam = any(
+                n in nama_keranjang for n in
+                ["Ayam Dada","Ayam Paha Bawah","Ayam Paha Atas","Ayam Sayap"]
+            )
+            punya_geprek = any(
+                n in nama_keranjang for n in
+                ["Paha Bawah Geprek","Paha Atas Geprek","Dada Geprek","Sayap Geprek"]
+            )
+            punya_nasi = "Nasi" in nama_keranjang
+
+            diskon = 0
+            pesan_diskon = []
+            if punya_ayam and punya_nasi:
+                diskon += 2000
+                pesan_diskon.append("🎉 Paket Ayam + Nasi")
+            if punya_geprek and punya_nasi:
+                diskon += 2000
+                pesan_diskon.append("🎉 Paket Geprek + Nasi")
+
+            if diskon > 0:
+                st.markdown("---")
+                for p in pesan_diskon:
+                    st.markdown(f"""
+                    <div style="background:linear-gradient(135deg,#FFF8E1,#FFF3CD);border-radius:10px;
+                    padding:10px 16px;border-left:4px solid #F1C40F;margin-bottom:6px">
+                        <span style="color:#7B241C;font-weight:700">{p}</span>
+                        <span style="color:#C0392B;font-weight:800;float:right">- Rp 2.000</span>
+                    </div>
+                    """, unsafe_allow_html=True)
+                st.markdown(f"<p style='color:#888;text-decoration:line-through;font-size:14px'>Subtotal: {format_rupiah(total_sebelum)}</p>", unsafe_allow_html=True)
+
+            total = total_sebelum - diskon
+            st.markdown(f"### 💰 Total: **{format_rupiah(total)}**" + (f" ~~{format_rupiah(total_sebelum)}~~" if diskon > 0 else ""))
 
             col1, col2 = st.columns(2)
             with col1:
@@ -443,6 +478,7 @@ def show_kasir():
                     st.rerun()
             with col2:
                 if st.button("💳 Lanjut Bayar →", use_container_width=True):
+                    st.session_state.total_diskon = diskon
                     st.session_state.step = "bayar"
                     st.rerun()
         else:
@@ -453,11 +489,24 @@ def show_kasir():
         st.markdown("## 💳 Pembayaran")
 
         keranjang = st.session_state.keranjang
-        total = sum(d['qty'] * d['harga'] for d in keranjang.values())
+        total_sebelum = sum(d['qty'] * d['harga'] for d in keranjang.values())
+        diskon = st.session_state.get("total_diskon", 0)
+        total  = total_sebelum - diskon
 
-        st.markdown(f"### Total: **{format_rupiah(total)}**")
         for nama, d in keranjang.items():
             st.write(f"• {nama} × {d['qty']} = {format_rupiah(d['qty'] * d['harga'])}")
+
+        if diskon > 0:
+            st.markdown(f"""
+            <div style="background:linear-gradient(135deg,#FFF8E1,#FFF3CD);border-radius:10px;
+            padding:10px 16px;border-left:4px solid #F1C40F;margin:8px 0">
+                <span style="color:#7B241C;font-weight:700">🎉 Diskon Paket</span>
+                <span style="color:#C0392B;font-weight:800;float:right">- {format_rupiah(diskon)}</span>
+            </div>
+            """, unsafe_allow_html=True)
+            st.markdown(f"<p style='color:#888;font-size:13px'>Subtotal: <s>{format_rupiah(total_sebelum)}</s></p>", unsafe_allow_html=True)
+
+        st.markdown(f"### 💰 Total Bayar: **{format_rupiah(total)}**")
         st.markdown("---")
 
         metode = st.radio("Metode Pembayaran", ["💵 Tunai", "📱 QRIS"], horizontal=True)
@@ -559,9 +608,6 @@ STOK_DEFAULT = [
     {"nama": "Sedotan",        "satuan": "pack", "stok": 15.0, "minimum": 3.0,  "kategori": "📦 Kemasan"},
     {"nama": "Tissue",         "satuan": "pack", "stok": 20.0, "minimum": 5.0,  "kategori": "📦 Kemasan"},
     {"nama": "Kantong Nasi",   "satuan": "pack", "stok": 10.0, "minimum": 3.0,  "kategori": "📦 Kemasan"},
-    {"nama": "Kantong Nasi",   "satuan": "pack", "stok": 10.0, "minimum": 3.0,  "kategori": "📦 Kemasan"},
-    {"nama": "sarung tangan plastik",   "satuan": "pack", "stok": 10.0, "minimum": 3.0,  "kategori": "📦 Kemasan"},
-
 ]
 
 # ══════════════════════════════════════════════════════════════
