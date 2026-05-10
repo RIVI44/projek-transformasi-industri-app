@@ -351,16 +351,26 @@ def show_dashboard():
 # ══════════════════════════════════════════════════════════════
 # KASIR
 # ══════════════════════════════════════════════════════════════
-BAGIAN_AYAM = [
-    {"nama": "Paha Bawah Geprek",  "harga": 12000, "emoji": "🍗", "deskripsi": "Juicy & gurih"},
-    {"nama": "Paha Atas Geprek",   "harga": 12000, "emoji": "🍗", "deskripsi": "Daging tebal"},
-    {"nama": "Dada Geprek",        "harga": 12000, "emoji": "🍗", "deskripsi": "Rendah lemak"},
-    {"nama": "Sayap Geprek",       "harga": 12000, "emoji": "🍗", "deskripsi": "Crispy & renyah"},
-    {"nama": "Paha Bawah",         "harga": 9000, "emoji": "🍗", "deskripsi": "Juicy & gurih"},
-    {"nama": "Paha Atas",          "harga": 9000, "emoji": "🍗", "deskripsi": "Daging tebal"},
-    {"nama": "Dada",               "harga": 9000, "emoji": "🍗", "deskripsi": "Rendah lemak"},
-    {"nama": "Sayap",              "harga": 9000, "emoji": "🍗", "deskripsi": "Crispy & renyah"},
- 
+MENU_AYAM = [
+    {"nama": "Ayam Dada",       "harga": 9000,  "emoji": "🍗", "deskripsi": "Rendah lemak"},
+    {"nama": "Ayam Paha Bawah", "harga": 9000,  "emoji": "🍗", "deskripsi": "Juicy & gurih"},
+    {"nama": "Ayam Paha Atas",  "harga": 9000,  "emoji": "🍗", "deskripsi": "Daging tebal"},
+    {"nama": "Ayam Sayap",      "harga": 9000,  "emoji": "🍗", "deskripsi": "Crispy & renyah"},
+]
+
+MENU_GEPREK = [
+    {"nama": "Paha Bawah Geprek", "harga": 12000, "emoji": "🍗", "deskripsi": "Juicy & pedas"},
+    {"nama": "Paha Atas Geprek",  "harga": 12000, "emoji": "🍗", "deskripsi": "Daging tebal"},
+    {"nama": "Dada Geprek",       "harga": 12000, "emoji": "🍗", "deskripsi": "Rendah lemak"},
+    {"nama": "Sayap Geprek",      "harga": 12000, "emoji": "🍗", "deskripsi": "Crispy & renyah"},
+]
+
+MENU_NASI = [
+    {"nama": "Nasi", "harga": 5000, "emoji": "🍚", "deskripsi": "Nasi putih hangat"},
+]
+
+MENU_MINUMAN = [
+    {"nama": "Ice Tea Solo", "harga": 5000, "emoji": "🧋", "deskripsi": "Teh manis dingin"},
 ]
 
 def show_kasir():
@@ -381,53 +391,39 @@ def show_kasir():
         except:
             menu_db = []
 
-        # Gabungkan bagian ayam + menu dari DB (non-ayam)
-        menu_lain = [m for m in menu_db if "Ayam" not in m.get("nama","") and "Geprek" not in m.get("nama","")]
-        tabs = st.tabs(["🍗 Ayam Geprek", "🍚 Nasi", "🥤 Minuman", "🍳 Lauk"])
+        tabs = st.tabs(["🍗 Ayam", "🌶️ Ayam Geprek", "🍚 Nasi", "🥤 Minuman"])
+
+        def render_menu_items(items, prefix):
+            cols = st.columns(3)
+            for i, item in enumerate(items):
+                with cols[i % 3]:
+                    st.markdown(f"""
+                    <div class="card" style="text-align:center">
+                        <div style="font-size:36px">{item['emoji']}</div>
+                        <b style="font-size:14px;color:#2C1810">{item['nama']}</b><br>
+                        <span style="color:#999;font-size:12px">{item['deskripsi']}</span><br>
+                        <span style="color:#C0392B;font-weight:800;font-size:15px">{format_rupiah(item['harga'])}</span>
+                    </div>
+                    """, unsafe_allow_html=True)
+                    qty = st.number_input("Qty", min_value=0, max_value=99,
+                        value=st.session_state.keranjang.get(item['nama'], {}).get("qty", 0),
+                        key=f"{prefix}_{i}", label_visibility="collapsed")
+                    if qty > 0:
+                        st.session_state.keranjang[item['nama']] = {"qty": qty, "harga": item['harga']}
+                    elif item['nama'] in st.session_state.keranjang:
+                        del st.session_state.keranjang[item['nama']]
 
         with tabs[0]:
-            cols = st.columns(3)
-            for i, item in enumerate(BAGIAN_AYAM):
-                with cols[i % 3]:
-                    with st.container():
-                        st.markdown(f"""
-                        <div class="card" style="text-align:center">
-                            <div style="font-size:36px">{item['emoji']}</div>
-                            <b style="font-size:14px;color:#2C1810">{item['nama']}</b><br>
-                            <span style="color:#999;font-size:12px">{item['deskripsi']}</span><br>
-                            <span style="color:#C0392B;font-weight:800;font-size:15px">{format_rupiah(item['harga'])}</span>
-                        </div>
-                        """, unsafe_allow_html=True)
-                        qty = st.number_input("Qty", min_value=0, max_value=99,
-                            value=st.session_state.keranjang.get(item['nama'], {}).get("qty", 0),
-                            key=f"ayam_{i}", label_visibility="collapsed")
-                        if qty > 0:
-                            st.session_state.keranjang[item['nama']] = {"qty": qty, "harga": item['harga']}
-                        elif item['nama'] in st.session_state.keranjang:
-                            del st.session_state.keranjang[item['nama']]
+            render_menu_items(MENU_AYAM, "ayam")
 
-        for tab_idx, kategori in enumerate(["Nasi", "Minuman", "Lauk"]):
-            with tabs[tab_idx + 1]:
-                items_kat = [m for m in menu_db if m.get("kategori") == kategori]
-                if not items_kat:
-                    st.info(f"Belum ada menu {kategori}.")
-                    continue
-                cols = st.columns(3)
-                for i, item in enumerate(items_kat):
-                    with cols[i % 3]:
-                        st.markdown(f"""
-                        <div class="card" style="text-align:center">
-                            <b style="color:#2C1810">{item['nama']}</b><br>
-                            <span style="color:#C0392B;font-weight:800;font-size:15px">{format_rupiah(item['harga'])}</span>
-                        </div>
-                        """, unsafe_allow_html=True)
-                        qty = st.number_input("Qty", min_value=0, max_value=99,
-                            value=st.session_state.keranjang.get(item['nama'], {}).get("qty", 0),
-                            key=f"menu_{item['id']}", label_visibility="collapsed")
-                        if qty > 0:
-                            st.session_state.keranjang[item['nama']] = {"qty": qty, "harga": item['harga']}
-                        elif item['nama'] in st.session_state.keranjang:
-                            del st.session_state.keranjang[item['nama']]
+        with tabs[1]:
+            render_menu_items(MENU_GEPREK, "geprek")
+
+        with tabs[2]:
+            render_menu_items(MENU_NASI, "nasi")
+
+        with tabs[3]:
+            render_menu_items(MENU_MINUMAN, "minuman")
 
         # Ringkasan keranjang
         st.markdown("---")
