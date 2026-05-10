@@ -341,11 +341,19 @@ def show_dashboard():
             fig.update_layout(
                 plot_bgcolor="#FFF8F0",
                 paper_bgcolor="#FFF8F0",
-                font_color="#2C1810",
+                font_color="#1a1a1a",
                 showlegend=False,
                 margin=dict(l=0, r=0, t=10, b=0),
-                yaxis=dict(gridcolor="#F5CBA7"),
-                xaxis=dict(showgrid=False),
+                yaxis=dict(
+                    gridcolor="#F5CBA7",
+                    tickfont=dict(color="#1a1a1a", size=12),
+                    title_font=dict(color="#1a1a1a"),
+                ),
+                xaxis=dict(
+                    showgrid=False,
+                    tickfont=dict(color="#1a1a1a", size=12),
+                    title_font=dict(color="#1a1a1a"),
+                ),
             )
             fig.update_traces(marker_line_width=0, marker_color="#C0392B")
             st.plotly_chart(fig, use_container_width=True)
