@@ -325,24 +325,65 @@ def show_dashboard():
         st.markdown("---")
         st.markdown("### 📈 Omset 7 Hari Terakhir")
         if not df_all.empty:
-            last7 = [(date.today() - timedelta(days=i)) for i in range(6, -1, -1)]
-            data7 = {"Tanggal": last7, "Omset": [int(df_all[df_all["tanggal"]==d]["total"].sum()) for d in last7]}
-            st.bar_chart(pd.DataFrame(data7).set_index("Tanggal"))
+            last7  = [(date.today() - timedelta(days=i)) for i in range(6, -1, -1)]
+            omset7 = [int(df_all[df_all["tanggal"]==d]["total"].sum()) for d in last7]
+            label7 = [d.strftime("%d %b") for d in last7]
+            df_chart = pd.DataFrame({"Tanggal": label7, "Omset (Rp)": omset7}).set_index("Tanggal")
+
+            # Grafik pakai plotly supaya warna bisa disesuaikan
+            import plotly.express as px
+            fig = px.bar(
+                df_chart.reset_index(),
+                x="Tanggal", y="Omset (Rp)",
+                color_discrete_sequence=["#C0392B"],
+                template="plotly_white",
+            )
+            fig.update_layout(
+                plot_bgcolor="#FFF8F0",
+                paper_bgcolor="#FFF8F0",
+                font_color="#2C1810",
+                showlegend=False,
+                margin=dict(l=0, r=0, t=10, b=0),
+                yaxis=dict(gridcolor="#F5CBA7"),
+                xaxis=dict(showgrid=False),
+            )
+            fig.update_traces(marker_line_width=0, marker_color="#C0392B")
+            st.plotly_chart(fig, use_container_width=True)
         else:
             st.info("Belum ada data transaksi.")
 
-        # Stok kritis
+        # Stok kritis — baca dari session state (bukan Supabase)
         st.markdown("---")
         st.markdown("### ⚠️ Stok Kritis")
-        stok_res = supabase.table("stok").select("*").execute()
-        if stok_res.data:
-            df_stok = pd.DataFrame(stok_res.data)
-            kritis  = df_stok[df_stok["stok_saat_ini"] <= df_stok["stok_minimum"]]
-            if not kritis.empty:
-                for _, r in kritis.iterrows():
-                    st.warning(f"⚠️ **{r['nama_bahan']}** — stok {r['stok_saat_ini']} {r['satuan']} (min: {r['stok_minimum']})")
-            else:
-                st.success("✅ Semua stok aman.")
+        if "data_stok" not in st.session_state:
+            # Init dulu kalau belum ada
+            st.session_state.data_stok = {
+                item["nama"]: {
+                    "stok": item["stok"], "satuan": item["satuan"],
+                    "minimum": item["minimum"], "kategori": item["kategori"]
+                }
+                for item in STOK_DEFAULT
+            }
+
+        data_stok = st.session_state.data_stok
+        kritis_list = {k: v for k, v in data_stok.items() if v["stok"] <= v["minimum"]}
+
+        if kritis_list:
+            for nama, info in kritis_list.items():
+                st.markdown(f"""
+                <div style="background:#FDEDEC;border-left:4px solid #E74C3C;border-radius:10px;
+                padding:10px 16px;margin-bottom:8px">
+                    <span style="color:#C0392B;font-weight:700">🔴 {nama}</span>
+                    <span style="color:#888;font-size:13px"> — stok: <b>{info['stok']} {info['satuan']}</b>
+                    (min: {info['minimum']})</span>
+                </div>
+                """, unsafe_allow_html=True)
+        else:
+            st.markdown("""
+            <div style="background:#EAFAF1;border-left:4px solid #27AE60;border-radius:10px;padding:10px 16px">
+                <span style="color:#1E8449;font-weight:700">✅ Semua stok aman.</span>
+            </div>
+            """, unsafe_allow_html=True)
 
     except Exception as e:
         st.error(f"Error: {e}")
