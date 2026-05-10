@@ -559,6 +559,9 @@ STOK_DEFAULT = [
     {"nama": "Sedotan",        "satuan": "pack", "stok": 15.0, "minimum": 3.0,  "kategori": "📦 Kemasan"},
     {"nama": "Tissue",         "satuan": "pack", "stok": 20.0, "minimum": 5.0,  "kategori": "📦 Kemasan"},
     {"nama": "Kantong Nasi",   "satuan": "pack", "stok": 10.0, "minimum": 3.0,  "kategori": "📦 Kemasan"},
+    {"nama": "Kantong Nasi",   "satuan": "pack", "stok": 10.0, "minimum": 3.0,  "kategori": "📦 Kemasan"},
+    {"nama": "sarung tangan plastik",   "satuan": "pack", "stok": 10.0, "minimum": 3.0,  "kategori": "📦 Kemasan"},
+
 ]
 
 # ══════════════════════════════════════════════════════════════
