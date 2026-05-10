@@ -203,12 +203,31 @@ def generate_order_number() -> str:
     suffix = ''.join(random.choices(string.ascii_uppercase + string.digits, k=4))
     return f"ORD-{now.strftime('%Y%m%d')}-{suffix}"
 
+def get_wib_now():
+    """Ambil waktu sekarang dalam WIB (UTC+7)."""
+    from datetime import timezone, timedelta
+    wib = timezone(timedelta(hours=7))
+    return datetime.now(wib)
+
 def get_greeting() -> str:
-    h = datetime.now().hour
-    if h < 11:   return "Selamat Pagi"
-    elif h < 15: return "Selamat Siang"
-    elif h < 18: return "Selamat Sore"
-    else:        return "Selamat Malam"
+    h = get_wib_now().hour
+    if h < 11:   return "Selamat Pagi 🌅"
+    elif h < 15: return "Selamat Siang ☀️"
+    elif h < 18: return "Selamat Sore 🌤️"
+    else:        return "Selamat Malam 🌙"
+
+def get_datetime_str() -> str:
+    """Format: Minggu, 10 Mei 2026 • 20:56 WIB"""
+    HARI = ["Senin","Selasa","Rabu","Kamis","Jumat","Sabtu","Minggu"]
+    BULAN = ["","Januari","Februari","Maret","April","Mei","Juni",
+             "Juli","Agustus","September","Oktober","November","Desember"]
+    now = get_wib_now()
+    hari   = HARI[now.weekday()]
+    tgl    = now.day
+    bln    = BULAN[now.month]
+    thn    = now.year
+    jam    = now.strftime("%H:%M")
+    return f"{hari}, {tgl} {bln} {thn} • {jam} WIB"
 
 
 # ── SUPABASE ─────────────────────────────────────────────────
@@ -298,7 +317,16 @@ def show_sidebar():
 # ══════════════════════════════════════════════════════════════
 def show_dashboard():
     supabase = get_supabase()
+    now_str = get_datetime_str()
     st.markdown(f"## 🏠 {get_greeting()}, Admin!")
+    st.markdown(f"""
+    <div style="background:linear-gradient(135deg,#fff 60%,#FFF8E1 100%);
+    border-radius:12px;padding:10px 18px;display:inline-block;
+    border-left:4px solid #F1C40F;margin-bottom:8px;
+    box-shadow:0 2px 10px rgba(192,57,43,0.08)">
+        <span style="color:#7B241C;font-weight:700;font-size:15px">📅 {now_str}</span>
+    </div>
+    """, unsafe_allow_html=True)
 
     today = date.today().isoformat()
     try:
