@@ -532,45 +532,134 @@ def _simpan_transaksi(supabase, keranjang, total, metode, uang, kembalian):
 
 
 # ══════════════════════════════════════════════════════════════
+# DATA STOK DEFAULT
+# ══════════════════════════════════════════════════════════════
+STOK_DEFAULT = [
+    {"nama": "Ayam Potong",    "satuan": "kg",   "stok": 20.0, "minimum": 5.0,  "kategori": "🍗 Bahan Utama"},
+    {"nama": "Tepung Bumbu",   "satuan": "kg",   "stok": 10.0, "minimum": 3.0,  "kategori": "🍗 Bahan Utama"},
+    {"nama": "Minyak Goreng",  "satuan": "liter","stok": 15.0, "minimum": 3.0,  "kategori": "🍗 Bahan Utama"},
+    {"nama": "Cabai Merah",    "satuan": "kg",   "stok": 5.0,  "minimum": 1.0,  "kategori": "🍗 Bahan Utama"},
+    {"nama": "Bawang Putih",   "satuan": "kg",   "stok": 3.0,  "minimum": 0.5,  "kategori": "🍗 Bahan Utama"},
+    {"nama": "Garam",          "satuan": "kg",   "stok": 2.0,  "minimum": 0.5,  "kategori": "🍗 Bahan Utama"},
+    {"nama": "Beras",          "satuan": "kg",   "stok": 30.0, "minimum": 10.0, "kategori": "🍗 Bahan Utama"},
+    {"nama": "Gula Pasir",     "satuan": "kg",   "stok": 5.0,  "minimum": 1.0,  "kategori": "🍗 Bahan Utama"},
+    {"nama": "Merica",         "satuan": "kg",   "stok": 0.5,  "minimum": 0.1,  "kategori": "🍗 Bahan Utama"},
+    {"nama": "Tepung Tapioka", "satuan": "kg",   "stok": 3.0,  "minimum": 1.0,  "kategori": "🍗 Bahan Utama"},
+    {"nama": "Penyedap Rasa",  "satuan": "pcs",  "stok": 20.0, "minimum": 5.0,  "kategori": "🍗 Bahan Utama"},
+    {"nama": "Kecap Manis",    "satuan": "botol","stok": 6.0,  "minimum": 2.0,  "kategori": "🧂 Bumbu"},
+    {"nama": "Saos Sambal",    "satuan": "botol","stok": 6.0,  "minimum": 2.0,  "kategori": "🧂 Bumbu"},
+    {"nama": "Bawang Merah",   "satuan": "kg",   "stok": 2.0,  "minimum": 0.5,  "kategori": "🧂 Bumbu"},
+    {"nama": "Kemiri",         "satuan": "kg",   "stok": 0.5,  "minimum": 0.1,  "kategori": "🧂 Bumbu"},
+    {"nama": "Teh Celup",      "satuan": "kotak","stok": 10.0, "minimum": 2.0,  "kategori": "🥤 Minuman"},
+    {"nama": "Air Galon",      "satuan": "galon","stok": 5.0,  "minimum": 2.0,  "kategori": "🥤 Minuman"},
+    {"nama": "Es Batu",        "satuan": "kg",   "stok": 10.0, "minimum": 3.0,  "kategori": "🥤 Minuman"},
+    {"nama": "Styrofoam Box",  "satuan": "pcs",  "stok": 200.0,"minimum": 50.0, "kategori": "📦 Kemasan"},
+    {"nama": "Cup Minuman",    "satuan": "pcs",  "stok": 150.0,"minimum": 50.0, "kategori": "📦 Kemasan"},
+    {"nama": "Plastik Kresek", "satuan": "pack", "stok": 20.0, "minimum": 5.0,  "kategori": "📦 Kemasan"},
+    {"nama": "Sedotan",        "satuan": "pack", "stok": 15.0, "minimum": 3.0,  "kategori": "📦 Kemasan"},
+    {"nama": "Tissue",         "satuan": "pack", "stok": 20.0, "minimum": 5.0,  "kategori": "📦 Kemasan"},
+    {"nama": "Kantong Nasi",   "satuan": "pack", "stok": 10.0, "minimum": 3.0,  "kategori": "📦 Kemasan"},
+]
+
+# ══════════════════════════════════════════════════════════════
 # STOK
 # ══════════════════════════════════════════════════════════════
 def show_stok():
-    supabase = get_supabase()
     st.markdown("## 📦 Manajemen Stok")
 
-    try:
-        res = supabase.table("stok").select("*").execute()
-        if not res.data:
-            st.info("Belum ada data stok.")
-            return
-        df = pd.DataFrame(res.data)
+    if "data_stok" not in st.session_state:
+        st.session_state.data_stok = {
+            item["nama"]: {
+                "stok": item["stok"], "satuan": item["satuan"],
+                "minimum": item["minimum"], "kategori": item["kategori"]
+            }
+            for item in STOK_DEFAULT
+        }
 
-        st.markdown("### 📋 Stok Bahan Baku")
-        for _, r in df.iterrows():
-            persen = min(100, int(r['stok_saat_ini'] / max(r['stok_minimum'], 1) * 100)) if r['stok_minimum'] > 0 else 100
-            warna  = "🟢" if persen > 100 else "🟡" if persen > 50 else "🔴"
-            col1, col2, col3 = st.columns([3, 1, 2])
-            col1.write(f"{warna} **{r['nama_bahan']}**")
-            col2.write(f"{r['stok_saat_ini']} {r['satuan']}")
-            col3.progress(min(persen, 100), text=f"Min: {r['stok_minimum']}")
+    data = st.session_state.data_stok
+    kategori_list = ["🍗 Bahan Utama", "🧂 Bumbu", "🥤 Minuman", "📦 Kemasan"]
 
-        st.markdown("---")
-        st.markdown("### ✏️ Update Stok")
-        nama_list = df["nama_bahan"].tolist()
-        pilih     = st.selectbox("Pilih bahan", nama_list)
-        baris     = df[df["nama_bahan"] == pilih].iloc[0]
-        stok_baru = st.number_input(f"Stok baru ({baris['satuan']})",
-                                    value=float(baris["stok_saat_ini"]), min_value=0.0, step=0.5)
-        if st.button("💾 Simpan Stok", use_container_width=True):
-            supabase.table("stok").update({"stok_saat_ini": stok_baru,
-                                           "updated_at": datetime.now().isoformat()})\
-                                  .eq("id", int(baris["id"])).execute()
-            st.success(f"✅ Stok **{pilih}** diperbarui menjadi {stok_baru} {baris['satuan']}")
+    # Ringkasan
+    total_kritis = sum(1 for v in data.values() if v["stok"] <= v["minimum"])
+    col1, col2, col3 = st.columns(3)
+    col1.metric("📦 Total Item", len(data))
+    col2.metric("⚠️ Stok Kritis", total_kritis)
+    col3.metric("✅ Stok Aman", len(data) - total_kritis)
+    st.markdown("---")
+
+    # Tampilkan per kategori
+    for kat in kategori_list:
+        items_kat = {k: v for k, v in data.items() if v["kategori"] == kat}
+        if not items_kat:
+            continue
+        st.markdown(f"### {kat}")
+        for nama, info in items_kat.items():
+            stok_now = info["stok"]
+            minimum  = info["minimum"]
+            satuan   = info["satuan"]
+            persen   = min(100, int(stok_now / max(minimum, 0.01) * 100))
+            if stok_now <= minimum:
+                status = "🔴"
+            elif stok_now <= minimum * 1.5:
+                status = "🟡"
+            else:
+                status = "🟢"
+            c1, c2, c3, c4 = st.columns([3, 1.2, 2.5, 1.5])
+            c1.markdown(f"{status} **{nama}**")
+            c2.markdown(f"`{stok_now} {satuan}`")
+            c3.progress(min(persen, 100))
+            if stok_now <= minimum:
+                c4.markdown("<span style='color:#E74C3C;font-size:12px;font-weight:700'>⚠️ Kritis!</span>", unsafe_allow_html=True)
+            else:
+                c4.markdown(f"<span style='color:#888;font-size:12px'>min: {minimum}</span>", unsafe_allow_html=True)
+        st.markdown("")
+
+    st.markdown("---")
+
+    # Update stok
+    st.markdown("### ✏️ Update Stok")
+    c1, c2 = st.columns(2)
+    with c1:
+        pilih = st.selectbox("Pilih bahan", list(data.keys()))
+    with c2:
+        info_pilih = data[pilih]
+        stok_baru = st.number_input(
+            f"Stok baru ({info_pilih['satuan']})",
+            value=float(info_pilih["stok"]), min_value=0.0, step=0.5
+        )
+    c1, c2 = st.columns(2)
+    with c1:
+        if st.button("💾 Simpan Perubahan", use_container_width=True):
+            st.session_state.data_stok[pilih]["stok"] = stok_baru
+            st.success(f"✅ Stok **{pilih}** → {stok_baru} {info_pilih['satuan']}")
+            st.rerun()
+    with c2:
+        if st.button("🔄 Reset ke Default", use_container_width=True):
+            del st.session_state.data_stok
+            st.info("Stok direset ke nilai awal.")
             st.rerun()
 
-    except Exception as e:
-        st.error(f"Error: {e}")
-
+    # Tambah bahan baru
+    st.markdown("---")
+    st.markdown("### ➕ Tambah Bahan Baru")
+    with st.expander("Klik untuk tambah bahan baru"):
+        c1, c2, c3 = st.columns(3)
+        nama_baru   = c1.text_input("Nama bahan")
+        satuan_baru = c2.selectbox("Satuan", ["kg","liter","pcs","pack","kotak","botol","galon","butir"])
+        kat_baru    = c3.selectbox("Kategori", ["🍗 Bahan Utama","🧂 Bumbu","🥤 Minuman","📦 Kemasan"])
+        c4, c5 = st.columns(2)
+        stok_awal = c4.number_input("Stok awal", min_value=0.0, step=1.0)
+        min_stok  = c5.number_input("Stok minimum", min_value=0.0, step=1.0)
+        if st.button("➕ Tambahkan Bahan", use_container_width=True):
+            if nama_baru.strip():
+                st.session_state.data_stok[nama_baru.strip()] = {
+                    "stok": stok_awal, "satuan": satuan_baru,
+                    "minimum": min_stok, "kategori": kat_baru
+                }
+                st.success(f"✅ **{nama_baru}** berhasil ditambahkan!")
+                st.rerun()
+            else:
+                st.warning("Nama bahan tidak boleh kosong.")
 
 # ══════════════════════════════════════════════════════════════
 # LAPORAN (admin only)
